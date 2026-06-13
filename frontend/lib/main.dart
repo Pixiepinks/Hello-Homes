@@ -1,0 +1,115 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'theme/app_theme.dart';
+import 'screens/home_screen.dart';
+import 'screens/product_detail_screen.dart';
+import 'screens/checkout_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/admin_dashboard_screen.dart';
+import 'models/product.dart';
+import 'providers/cart_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/notification_provider.dart';
+import 'screens/user_dashboard_screen.dart';
+import 'screens/category_products_screen.dart';
+import 'screens/all_categories_screen.dart';
+import 'screens/all_products_screen.dart';
+import 'screens/upload_slip_screen.dart';
+import 'widgets/cookie_consent_banner.dart';
+
+void main() {
+  runApp(const HelloHomesApp());
+}
+
+final GoRouter _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/product/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id'];
+        final product = dummyProducts.firstWhere((p) => p.id == id, orElse: () => dummyProducts.first);
+        return ProductDetailScreen(product: product);
+      },
+    ),
+    GoRoute(
+      path: '/checkout',
+      builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const UserDashboardScreen(),
+    ),
+    GoRoute(
+      path: '/admin',
+      builder: (context, state) {
+        final orderId = state.uri.queryParameters['orderId'];
+        return AdminDashboardScreen(initialOrderId: orderId);
+      },
+    ),
+    GoRoute(
+      path: '/category/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        final title = state.uri.queryParameters['title'] ?? 'Category';
+        return CategoryProductsScreen(categoryId: id, categoryTitle: title);
+      },
+    ),
+    GoRoute(
+      path: '/products',
+      builder: (context, state) => const AllProductsScreen(),
+    ),
+    GoRoute(
+      path: '/categories',
+      builder: (context, state) => const AllCategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/upload-slip/:orderId',
+      builder: (context, state) {
+        final orderId = state.pathParameters['orderId']!;
+        return UploadSlipScreen(orderId: orderId);
+      },
+    ),
+  ],
+);
+
+class HelloHomesApp extends StatelessWidget {
+  const HelloHomesApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
+          create: (context) => NotificationProvider(context.read<AuthProvider>()),
+          update: (context, auth, previous) => previous ?? NotificationProvider(auth),
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'Hello Homes',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        routerConfig: _router,
+        builder: (context, child) {
+          return Stack(
+            children: [
+              child!,
+              const CookieConsentBanner(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}

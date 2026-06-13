@@ -1,0 +1,12 @@
+cd c:\wamp64\www\HH\backend
+php artisan serve
+
+
+
+cd c:\wamp64\www\HH\frontend
+flutter run -d chrome
+
+
+
+
+
