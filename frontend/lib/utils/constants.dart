@@ -1,6 +1,9 @@
 class AppConstants {
-  // Use localhost for local development (127.0.0.1 can sometimes cause CORS issues in some browsers)
-  // CHANGE THIS TO YOUR LIVE DOMAIN (e.g., https://api.hellohomes.com) when deploying
-  static const String baseUrl = 'http://localhost:8000';
-  static const String apiUrl = '$baseUrl/api';
+  // Defaults to the current Laravel host so Railway can serve the Flutter app
+  // and API from the same public URL. Override at build time with:
+  // flutter build web --dart-define=API_BASE_URL=https://api.example.com
+  static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  static String get baseUrl => _configuredBaseUrl;
+  static String get apiUrl => '$baseUrl/api';
 }
