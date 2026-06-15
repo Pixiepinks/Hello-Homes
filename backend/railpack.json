@@ -17,6 +17,12 @@
     "libjpeg-dev",
     "libpng-dev",
     "libwebp-dev",
-    "libfreetype6-dev"
-  ]
+    "libfreetype6-dev",
+    "libonig-dev",
+    "libzip-dev",
+    "libpq-dev"
+  ],
+  "packages": {
+    "php": "8.3"
+  }
 }
