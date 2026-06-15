@@ -3,7 +3,13 @@
   "provider": "php",
   "buildAptPackages": [
     "bison",
-    "re2c"
+    "re2c",
+    "libcurl4-openssl-dev",
+    "pkg-config",
+    "libssl-dev",
+    "libxml2-dev",
+    "zlib1g-dev",
+    "libsqlite3-dev"
   ],
   "packages": {
     "php": "8.3"
