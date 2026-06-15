@@ -5,15 +5,35 @@ log() {
   echo "[build-frontend] $*"
 }
 
-BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_DIR="$(cd "$BACKEND_DIR/.." && pwd)"
-FRONTEND_DIR="${FRONTEND_DIR:-$REPO_DIR/frontend}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
 PUBLIC_DIR="${PUBLIC_DIR:-$BACKEND_DIR/public}"
 FLUTTER_VERSION="${FLUTTER_VERSION:-stable}"
 
+if [ -d "$REPO_ROOT/frontend" ]; then
+  FRONTEND_DIR="$REPO_ROOT/frontend"
+elif [ -d "$BACKEND_DIR/../frontend" ]; then
+  FRONTEND_DIR="$(cd "$BACKEND_DIR/../frontend" && pwd)"
+elif [ -d "/app/frontend" ]; then
+  FRONTEND_DIR="/app/frontend"
+else
+  FRONTEND_DIR="$REPO_ROOT/frontend"
+fi
+
+log "Current working directory: $(pwd)"
+log "SCRIPT_DIR: $SCRIPT_DIR"
+log "BACKEND_DIR: $BACKEND_DIR"
+log "REPO_ROOT: $REPO_ROOT"
+log "FRONTEND_DIR: $FRONTEND_DIR"
+log "Contents of REPO_ROOT ($REPO_ROOT):"
+ls -la "$REPO_ROOT" || true
+log "Contents of BACKEND_DIR parent ($(dirname "$BACKEND_DIR")):"
+ls -la "$(dirname "$BACKEND_DIR")" || true
+
 if [ ! -d "$FRONTEND_DIR" ]; then
   echo "Frontend directory not found at $FRONTEND_DIR" >&2
-  echo "Railway should build from the backend directory with the repository root available one level up, so ../frontend exists." >&2
+  echo "Checked $REPO_ROOT/frontend, $BACKEND_DIR/../frontend, and /app/frontend." >&2
   exit 1
 fi
 
@@ -71,4 +91,5 @@ if [ ! -f "$PUBLIC_DIR/main.dart.js" ]; then
   exit 1
 fi
 
+log "Confirm index.html exists at $PUBLIC_DIR/index.html"
 log "Confirm main.dart.js exists at $PUBLIC_DIR/main.dart.js"
