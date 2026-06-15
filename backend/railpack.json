@@ -1,14 +1,10 @@
 {
   "$schema": "https://schema.railpack.com",
-<<<<<<< HEAD
   "provider": "php",
-=======
->>>>>>> 9db7254 (chore: add all required PHP compilation apt dependencies)
   "buildAptPackages": [
     "bison",
     "re2c",
     "libcurl4-openssl-dev",
-<<<<<<< HEAD
     "pkg-config",
     "libssl-dev",
     "libxml2-dev",
@@ -23,12 +19,4 @@
   "packages": {
     "php": "8.3"
   }
-=======
-    "libonig-dev",
-    "libzip-dev",
-    "libpq-dev",
-    "libgd-dev",
-    "libreadline-dev"
-  ]
->>>>>>> 9db7254 (chore: add all required PHP compilation apt dependencies)
 }
