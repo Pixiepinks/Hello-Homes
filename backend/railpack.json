@@ -13,7 +13,12 @@
     "libssl-dev",
     "libxml2-dev",
     "zlib1g-dev",
-    "libsqlite3-dev"
+    "libsqlite3-dev",
+    "libgd-dev",
+    "libjpeg-dev",
+    "libpng-dev",
+    "libwebp-dev",
+    "libfreetype6-dev"
   ],
   "packages": {
     "php": "8.3"
