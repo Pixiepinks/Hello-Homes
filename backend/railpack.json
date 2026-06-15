@@ -33,8 +33,7 @@
   "steps": {
     "build": {
       "commands": [
-        "...",
-        "./scripts/build-frontend.sh"
+        "..."
       ]
     }
   },
