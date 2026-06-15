@@ -16,7 +16,8 @@
     "libwebp-dev",
     "libfreetype6-dev",
     "libonig-dev",
-    "libzip-dev"
+    "libzip-dev",
+    "libpq-dev"
   ],
   "packages": {
     "php": "8.3"
