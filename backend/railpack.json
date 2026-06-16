@@ -17,6 +17,27 @@
     "libjpeg-dev",
     "libpng-dev",
     "libwebp-dev",
-    "libfreetype6-dev"
-  ]
+    "libfreetype6-dev",
+    "libonig-dev",
+    "libzip-dev",
+    "libpq-dev",
+    "git",
+    "curl",
+    "unzip",
+    "xz-utils"
+  ],
+  "packages": {
+    "php": "8.3",
+    "node": "22"
+  },
+  "steps": {
+    "build": {
+      "commands": [
+        "..."
+      ]
+    }
+  },
+  "deploy": {
+    "startCommand": "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
+  }
 }
