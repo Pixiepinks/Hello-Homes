@@ -28,20 +28,25 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
-  Future<bool> sendOtp(String email) async {
+  Future<String?> sendOtp(String email) async {
     try {
       final response = await http.post(
         Uri.parse('${AppConstants.apiUrl}/auth/send-otp'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email}),
       );
+      
+      final Map<String, dynamic> data = json.decode(response.body);
+      
       if (response.statusCode == 200) {
-        return true;
+        return null;
+      } else {
+        return data['message'] ?? 'Failed to send OTP. Please try again.';
       }
     } catch (e) {
       debugPrint('Error sending OTP: $e');
+      return 'Failed to send OTP. Please check your network connection.';
     }
-    return false;
   }
 
   Future<bool> verifyOtp(String email, String otp) async {

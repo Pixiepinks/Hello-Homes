@@ -48,41 +48,10 @@ class AuthController extends Controller
 
         // Send OTP via email synchronously
         try {
-            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-            
-            $mail->isSMTP();
-            $mail->Host       = env('PHPMAILER_HOST', 'smtp.gmail.com');
-            $mail->SMTPAuth   = true;
-            $mail->Username   = env('PHPMAILER_USERNAME');
-            $mail->Password   = env('PHPMAILER_PASSWORD');
-            
-            $encryption = env('PHPMAILER_ENCRYPTION', 'smtps');
-            if (strtolower($encryption) === 'tls') {
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            } else {
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-            }
-            
-            $mail->Port       = env('PHPMAILER_PORT', 465);
+            $subject = 'Your Login OTP - Hello Homes';
+            $body = "<h3>Hello Homes OTP</h3><p>Your One-Time Password is: <b>{$otp}</b></p><p>This OTP will expire in 10 minutes.</p>";
 
-            if (env('APP_ENV') === 'local') {
-                $mail->SMTPOptions = array(
-                    'ssl' => array(
-                        'verify_peer' => false,
-                        'verify_peer_name' => false,
-                        'allow_self_signed' => true
-                    )
-                );
-            }
-
-            $mail->setFrom(env('PHPMAILER_FROM_ADDRESS'), env('PHPMAILER_FROM_NAME'));
-            $mail->addAddress($user->email, $user->name);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Your Login OTP - Hello Homes';
-            $mail->Body    = "<h3>Hello Homes OTP</h3><p>Your One-Time Password is: <b>{$otp}</b></p><p>This OTP will expire in 10 minutes.</p>";
-
-            $mail->send();
+            \App\Helpers\MailHelper::send($user->email, $user->name, $subject, $body);
 
             // Notify User
             Notification::create([
@@ -96,9 +65,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'OTP sent successfully']);
         } catch (\Exception $e) {
             \Log::error('Failed to send OTP email: ' . $e->getMessage());
+            $errorMessage = $e->getMessage();
+            if (empty($errorMessage)) {
+                $errorMessage = 'Failed to send OTP email. Please check your email address or try again later.';
+            }
             return response()->json([
-                'message' => 'Failed to send OTP email. Please check your email address or try again later.',
-                'error' => $e->getMessage()
+                'message' => $errorMessage,
+                'error' => $errorMessage
             ], 500);
         }
     }

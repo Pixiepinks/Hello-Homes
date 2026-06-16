@@ -51,18 +51,18 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_emailController.text.trim().isEmpty) return;
 
     setState(() => _isLoading = true);
-    final success = await context.read<AuthProvider>().sendOtp(_emailController.text.trim());
+    final errorMessage = await context.read<AuthProvider>().sendOtp(_emailController.text.trim());
 
     if (mounted) {
       setState(() => _isLoading = false);
-      if (success) {
+      if (errorMessage == null) {
         setState(() {
           _otpSent = true;
           _startTimer();
         });
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OTP sent to your email.')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to send OTP. Please try again.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     }
   }

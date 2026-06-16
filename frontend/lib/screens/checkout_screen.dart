@@ -197,19 +197,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void _handleSendOtp() async {
     if (_emailController.text.trim().isEmpty) return;
     setState(() => _isSendingOtp = true);
-    final success = await context.read<AuthProvider>().sendOtp(_emailController.text.trim());
+    final errorMessage = await context.read<AuthProvider>().sendOtp(_emailController.text.trim());
     if (mounted) {
       setState(() {
         _isSendingOtp = false;
-        if (success) {
+        if (errorMessage == null) {
           _otpSent = true;
           _startTimer();
         }
       });
-      if (success) {
+      if (errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OTP sent to email for auto-fill.')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to send OTP.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     }
   }

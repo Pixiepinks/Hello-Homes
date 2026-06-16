@@ -79,52 +79,12 @@ class OrderController extends Controller
         }
 
         try {
-            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-            
-            // Server settings
-            $mail->isSMTP();
-            $mail->Host       = env('PHPMAILER_HOST', 'smtp.gmail.com');
-            $mail->SMTPAuth   = true;
-            $mail->Username   = env('PHPMAILER_USERNAME');
-            $mail->Password   = env('PHPMAILER_PASSWORD');
-            
-            // Handle encryption dynamically
-            $encryption = env('PHPMAILER_ENCRYPTION', 'smtps');
-            if (strtolower($encryption) === 'tls') {
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            } elseif (strtolower($encryption) === 'ssl' || strtolower($encryption) === 'smtps') {
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-            } else {
-                $mail->SMTPSecure = ''; // No encryption
-                $mail->SMTPAutoTLS = false;
-            }
-            
-            $mail->Port       = env('PHPMAILER_PORT', 465);
-            $mail->Timeout    = 10; // Prevent blocking the server for too long
+            $subject = 'Order Confirmation - Hello Homes';
+            $body = view('emails.order_receipt', ['order' => $order, 'password' => $generatedPassword])->render();
 
-            // Bypass SSL for local development
-            if (env('APP_ENV') === 'local') {
-                $mail->SMTPOptions = array(
-                    'ssl' => array(
-                        'verify_peer' => false,
-                        'verify_peer_name' => false,
-                        'allow_self_signed' => true
-                    )
-                );
-            }
-
-            // Recipients
-            $mail->setFrom(env('PHPMAILER_FROM_ADDRESS', 'noreply@hellohomes.com'), env('PHPMAILER_FROM_NAME', 'Hello Homes'));
-            $mail->addAddress($order->email, $order->full_name);
-
-            // Content
-            $mail->isHTML(true);
-            $mail->Subject = 'Order Confirmation - Hello Homes';
-            $mail->Body    = view('emails.order_receipt', ['order' => $order, 'password' => $generatedPassword])->render();
-
-            $mail->send();
+            \App\Helpers\MailHelper::send($order->email, $order->full_name, $subject, $body);
         } catch (\Exception $e) {
-            \Log::error('Failed to send order receipt email via PHPMailer: ' . $e->getMessage());
+            \Log::error('Failed to send order receipt email: ' . $e->getMessage());
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -210,36 +170,13 @@ class OrderController extends Controller
         // Notify user via email if status changed
         if ($oldStatus !== $order->status) {
             try {
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                $mail->isSMTP();
-                $mail->Host       = env('PHPMAILER_HOST', 'smtp.gmail.com');
-                $mail->SMTPAuth   = true;
-                $mail->Username   = env('PHPMAILER_USERNAME');
-                $mail->Password   = env('PHPMAILER_PASSWORD');
-                $encryption = env('PHPMAILER_ENCRYPTION', 'smtps');
-                if (strtolower($encryption) === 'tls') {
-                    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                } else {
-                    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-                }
-                $mail->Port       = env('PHPMAILER_PORT', 465);
-                $mail->Timeout    = 10; // Prevent blocking the server for too long
-
-                if (env('APP_ENV') === 'local') {
-                    $mail->SMTPOptions = array('ssl' => array('verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true));
-                }
-
-                $mail->setFrom(env('PHPMAILER_FROM_ADDRESS'), env('PHPMAILER_FROM_NAME'));
-                $mail->addAddress($order->email, $order->full_name);
-
-                $mail->isHTML(true);
-                $mail->Subject = "Order #{$order->id} Status Updated - Hello Homes";
-                $mail->Body    = "<h3>Order Status Update</h3>
+                $subject = "Order #{$order->id} Status Updated - Hello Homes";
+                $body    = "<h3>Order Status Update</h3>
                                  <p>Hello {$order->full_name},</p>
                                  <p>Your order <b>#{$order->id}</b> has been updated to: <b>" . strtoupper($order->status) . "</b>.</p>
                                  <p>Thank you for shopping with Hello Homes!</p>";
 
-                $mail->send();
+                \App\Helpers\MailHelper::send($order->email, $order->full_name, $subject, $body);
             } catch (\Exception $e) {
                 \Log::error('Failed to send status update email: ' . $e->getMessage());
             }
