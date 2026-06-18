@@ -22,12 +22,16 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return AppBar(
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(SecondaryCategoryNavBar.desktopHeight),
+        child: SecondaryCategoryNavBar(),
+      ),
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.pop(),
             )
-          : (isMobile 
+          : (isMobile
               ? IconButton(
                   icon: const Icon(Icons.menu),
                   onPressed: () => Scaffold.of(context).openDrawer(),
@@ -50,7 +54,7 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        if (isMobile) 
+        if (isMobile)
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
@@ -58,9 +62,9 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
               showSearch(context: context, delegate: ProductSearchDelegate());
             },
           ),
-        
+
         const NotificationBell(),
-        
+
         Stack(
           alignment: Alignment.center,
           children: [
@@ -81,7 +85,11 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   child: Text(
                     cartItemCount.toString(),
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -90,7 +98,8 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
         Consumer<AuthProvider>(
           builder: (context, auth, _) => IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () => context.go(auth.isAuthenticated ? '/profile' : '/login'),
+            onPressed: () =>
+                context.go(auth.isAuthenticated ? '/profile' : '/login'),
             tooltip: auth.isAuthenticated ? 'My Account' : 'Login',
           ),
         ),
@@ -100,7 +109,107 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(
+        kToolbarHeight + SecondaryCategoryNavBar.desktopHeight,
+      );
+}
+
+class SecondaryCategoryNavBar extends StatelessWidget {
+  static const double desktopHeight = 54;
+  static const double mobileHeight = 46;
+
+  const SecondaryCategoryNavBar({super.key});
+
+  static const List<String> _items = [
+    'All Categories',
+    'Brands',
+    'Deals',
+    'New Arrivals',
+    'Furniture',
+    'Appliances',
+    'Electronics',
+    'Track your order',
+    'Contact',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final height = isMobile ? mobileHeight : desktopHeight;
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: const Color(0xFF0B74B8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: isMobile
+            ? const BouncingScrollPhysics()
+            : const NeverScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.of(context).size.width,
+            minHeight: height,
+          ),
+          child: Row(
+            mainAxisAlignment:
+                isMobile ? MainAxisAlignment.start : MainAxisAlignment.center,
+            children: [
+              for (final item in _items)
+                _SecondaryCategoryNavItem(
+                  label: item,
+                  showMenuIcon: item == 'All Categories',
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryCategoryNavItem extends StatelessWidget {
+  final String label;
+  final bool showMenuIcon;
+
+  const _SecondaryCategoryNavItem({
+    required this.label,
+    this.showMenuIcon = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
+    return InkWell(
+      onTap: () {},
+      child: Container(
+        height: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 14 : 18),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showMenuIcon) ...[
+              const Icon(Icons.menu, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class GlobalDrawer extends StatelessWidget {
@@ -155,7 +264,7 @@ class GlobalFooter extends StatelessWidget {
       padding: EdgeInsets.all(isMobile ? 30 : 60),
       child: Column(
         children: [
-          if (isMobile) 
+          if (isMobile)
             _buildMobileFooter(context)
           else 
             _buildDesktopFooter(context),
