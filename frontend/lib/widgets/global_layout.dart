@@ -36,12 +36,10 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           InkWell(
             onTap: () => context.go('/'),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Hello', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppTheme.accentOrange, fontWeight: FontWeight.w900)),
-                Text('Homes', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppTheme.primaryBlue, fontWeight: FontWeight.w900)),
-              ],
+            child: Image.asset(
+              'assets/images/hello_homes_logo.png',
+              height: isMobile ? 36 : 48,
+              fit: BoxFit.contain,
             ),
           ),
           if (!isMobile) ...[
