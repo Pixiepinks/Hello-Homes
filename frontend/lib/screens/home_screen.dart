@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final isMobile = constraints.maxWidth < 800;
           if (isMobile) {
             return SizedBox(
-              height: 360,
+              height: 320,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: bestOffers.length,
@@ -153,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   final product = bestOffers[index];
                   return SizedBox(
-                    width: 260,
+                    width: 248,
                     child: HoverProductCard(
                       product: product,
                       onTap: () => context.go('/product/${product.id}'),
@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: constraints.maxWidth > 1200 ? 4 : 2,
-              childAspectRatio: 0.75,
+              childAspectRatio: 0.86,
               crossAxisSpacing: 24,
               mainAxisSpacing: 24,
             ),
@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              childAspectRatio: 0.75,
+              childAspectRatio: 0.86,
               crossAxisSpacing: 24,
               mainAxisSpacing: 24,
             ),

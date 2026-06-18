@@ -495,8 +495,20 @@ class ProductSearchDelegate extends SearchDelegate {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const Icon(Icons.image),
               ),
-              title: Text(product['title']),
-              subtitle: Text('\$${product['price']}'),
+              title: Text(product['title'], maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Row(
+                children: [
+                  Text(
+                    '\$${product['original_price'] ?? product['price']}',
+                    style: const TextStyle(color: AppTheme.textMuted, decoration: TextDecoration.lineThrough),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '\$${product['price']}',
+                    style: const TextStyle(color: AppTheme.accentOrange, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
               onTap: () {
                 close(context, null);
                 context.go('/product/${product['id']}');

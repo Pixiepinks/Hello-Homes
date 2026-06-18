@@ -141,54 +141,58 @@ class _HoverProductCardState extends State<HoverProductCard> {
               ),
               // Details Section
               Expanded(
-                flex: 4,
+                flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.product.subtitle,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.textMuted,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.2,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.product.title,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                      Text(
+                        widget.product.subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textMuted,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.product.title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
                       Row(
                         children: [
-                          Text(
-                            '\$${widget.product.price.toStringAsFixed(0)}',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.primaryBlue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          if (widget.product.price < widget.product.originalPrice) ...[
-                            const SizedBox(width: 8),
-                            Text(
+                          Flexible(
+                            child: Text(
                               '\$${widget.product.originalPrice.toStringAsFixed(0)}',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: AppTheme.textMuted,
                                     decoration: TextDecoration.lineThrough,
                                   ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              '\$${widget.product.price.toStringAsFixed(0)}',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: AppTheme.primaryBlue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],
