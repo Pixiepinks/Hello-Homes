@@ -11,8 +11,8 @@ COPY --from=build /app/build/web /srv
 COPY <<'CADDYFILE' /etc/caddy/Caddyfile
 :{$PORT:8080}
 root * /srv
+try_files {path} {path}/ /index.html
 file_server
-try_files {path} /index.html
 CADDYFILE
 EXPOSE 8080
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]

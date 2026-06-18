@@ -1,17 +1,69 @@
 import '../utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class AuthProvider extends ChangeNotifier {
+  static const _tokenKey = 'hello_homes_auth_token';
+  static const _userKey = 'hello_homes_auth_user';
+  static const _isAdminKey = 'hello_homes_auth_is_admin';
+
   String? _token;
   Map<String, dynamic>? _user;
+  bool _isAdmin = false;
+  bool _isLoadingSession = true;
+  String? _lastAuthError;
+
+  AuthProvider() {
+    _loadSession();
+  }
 
   bool get isAuthenticated => _token != null;
   String? get token => _token;
   Map<String, dynamic>? get user => _user;
-  bool _isAdmin = false;
   bool get isAdmin => _isAdmin;
+  bool get isLoadingSession => _isLoadingSession;
+  String? get lastAuthError => _lastAuthError;
+
+  Future<void> _loadSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(_tokenKey);
+      final encodedUser = prefs.getString(_userKey);
+
+      if (token != null && encodedUser != null) {
+        _token = token;
+        _user = json.decode(encodedUser) as Map<String, dynamic>;
+        _isAdmin = prefs.getBool(_isAdminKey) ?? false;
+      }
+    } catch (e) {
+      debugPrint('Error loading auth session: $e');
+      await _clearPersistedSession();
+      _token = null;
+      _user = null;
+      _isAdmin = false;
+    } finally {
+      _isLoadingSession = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _persistSession() async {
+    if (_token == null || _user == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, _token!);
+    await prefs.setString(_userKey, json.encode(_user));
+    await prefs.setBool(_isAdminKey, _isAdmin);
+  }
+
+  Future<void> _clearPersistedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+    await prefs.remove(_isAdminKey);
+  }
 
   Future<bool> checkEmail(String email) async {
     try {
@@ -35,9 +87,9 @@ class AuthProvider extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email}),
       );
-      
+
       final Map<String, dynamic> data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return null;
       } else {
@@ -50,6 +102,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> verifyOtp(String email, String otp) async {
+    _lastAuthError = null;
     try {
       final response = await http.post(
         Uri.parse('${AppConstants.apiUrl}/auth/verify-otp'),
@@ -61,16 +114,21 @@ class AuthProvider extends ChangeNotifier {
         _token = data['access_token'];
         _user = data['user'];
         _isAdmin = data['is_admin'] ?? false;
+        await _persistSession();
         notifyListeners();
         return true;
       }
+
+      _lastAuthError = _extractErrorMessage(response.body, 'Invalid or expired OTP.');
     } catch (e) {
       debugPrint('Error verifying OTP: $e');
+      _lastAuthError = 'Unable to verify OTP. Please check your connection and try again.';
     }
     return false;
   }
 
   Future<bool> adminLogin(String email, String password) async {
+    _lastAuthError = null;
     try {
       final response = await http.post(
         Uri.parse('${AppConstants.apiUrl}/auth/admin-login'),
@@ -82,13 +140,29 @@ class AuthProvider extends ChangeNotifier {
         _token = data['access_token'];
         _user = data['user'];
         _isAdmin = data['is_admin'] ?? false;
+        await _persistSession();
         notifyListeners();
         return _isAdmin;
       }
+
+      _lastAuthError = _extractErrorMessage(response.body, 'Invalid admin credentials.');
     } catch (e) {
       debugPrint('Error logging in as admin: $e');
+      _lastAuthError = 'Unable to log in. Please check your connection and try again.';
     }
     return false;
+  }
+
+  String _extractErrorMessage(String responseBody, String fallback) {
+    try {
+      final data = json.decode(responseBody);
+      if (data is Map<String, dynamic> && data['message'] is String) {
+        return data['message'] as String;
+      }
+    } catch (_) {
+      // Use the safe fallback below when the server response is not JSON.
+    }
+    return fallback;
   }
 
   Future<bool> fetchUser() async {
@@ -103,6 +177,7 @@ class AuthProvider extends ChangeNotifier {
       );
       if (response.statusCode == 200) {
         _user = json.decode(response.body);
+        await _persistSession();
         notifyListeners();
         return true;
       }
@@ -112,9 +187,11 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
-  void setSession(String token, Map<String, dynamic> user) {
+  void setSession(String token, Map<String, dynamic> user, {bool isAdmin = false}) {
     _token = token;
     _user = user;
+    _isAdmin = isAdmin;
+    _persistSession();
     notifyListeners();
   }
 
@@ -122,6 +199,8 @@ class AuthProvider extends ChangeNotifier {
     _token = null;
     _user = null;
     _isAdmin = false;
+    _lastAuthError = null;
+    _clearPersistedSession();
     notifyListeners();
   }
 }
