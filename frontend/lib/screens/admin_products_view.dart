@@ -1,10 +1,12 @@
 import '../utils/constants.dart';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../theme/app_theme.dart';
 import '../models/product.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
 
 class AdminProductsView extends StatefulWidget {
@@ -38,6 +40,11 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   List<dynamic> _deliveryOptions = [];
   bool _isLoadingOptions = true;
   bool _isSubmitting = false;
+  bool _isUploadingMainImage = false;
+  bool _isUploadingAdditionalImages = false;
+  final ImagePicker _imagePicker = ImagePicker();
+  static const int _maxImageBytes = 5 * 1024 * 1024;
+  static const Set<String> _allowedImageExtensions = {'jpg', 'jpeg', 'png', 'webp'};
   
   // Search and Filter State
   final _searchController = TextEditingController();
@@ -268,6 +275,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       _enquiryController.clear();
       _isNew = false;
       _isOnSale = false;
+      _isUploadingMainImage = false;
+      _isUploadingAdditionalImages = false;
       _selectedCategoryId = null;
       if (_deliveryOptions.isNotEmpty) {
         final standard = _deliveryOptions.firstWhere((o) => o['type'] == 'weight_based', orElse: () => _deliveryOptions.first);
@@ -275,6 +284,170 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       }
       _weightController.text = '1.0';
     });
+  }
+
+  String _productUploadFolder() {
+    final source = _titleController.text.trim().isNotEmpty
+        ? _titleController.text.trim()
+        : (_editingProduct?.id.isNotEmpty == true ? _editingProduct!.id : 'temp-product');
+    final slug = source
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+\$'), '');
+    return slug.isEmpty ? 'temp-product' : slug;
+  }
+
+  String _safeFileName(String name) {
+    final cleaned = name
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9._-]+'), '-')
+        .replaceAll(RegExp(r'-+'), '-');
+    return cleaned.isEmpty ? 'product-image.jpg' : cleaned;
+  }
+
+  String _fileExtension(String name) {
+    final parts = name.toLowerCase().split('.');
+    return parts.length > 1 ? parts.last : '';
+  }
+
+  String _contentTypeForExtension(String extension) {
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  void _showUploadMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<String?> _uploadProductImage(XFile file) async {
+    if (!AppConstants.isSupabaseStorageConfigured) {
+      _showUploadMessage('Image upload is not configured. Please paste image URL or configure Supabase.');
+      return null;
+    }
+
+    final extension = _fileExtension(file.name);
+    if (!_allowedImageExtensions.contains(extension)) {
+      _showUploadMessage('Only JPG, JPEG, PNG, and WEBP images are allowed.');
+      return null;
+    }
+
+    final Uint8List bytes = await file.readAsBytes();
+    if (bytes.length > _maxImageBytes) {
+      _showUploadMessage('Each image must be 5MB or smaller.');
+      return null;
+    }
+
+    final path = 'products/${_productUploadFolder()}/${DateTime.now().millisecondsSinceEpoch}-${_safeFileName(file.name)}';
+    final encodedPath = path.split('/').map(Uri.encodeComponent).join('/');
+    final uploadUrl = Uri.parse(
+      '${AppConstants.supabaseUrl}/storage/v1/object/${AppConstants.supabaseProductBucket}/$encodedPath',
+    );
+
+    final response = await http.post(
+      uploadUrl,
+      headers: {
+        'apikey': AppConstants.supabaseAnonKey,
+        'Authorization': 'Bearer ${AppConstants.supabaseAnonKey}',
+        'Content-Type': _contentTypeForExtension(extension),
+        'x-upsert': 'false',
+      },
+      body: bytes,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Supabase upload failed (${response.statusCode}): ${response.body}');
+    }
+
+    return '${AppConstants.supabaseUrl}/storage/v1/object/public/${AppConstants.supabaseProductBucket}/$encodedPath';
+  }
+
+  Future<void> _pickAndUploadMainImage() async {
+    setState(() => _isUploadingMainImage = true);
+    try {
+      final file = await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (file == null) return;
+      final url = await _uploadProductImage(file);
+      if (url == null) return;
+      setState(() => _imageUrlController.text = url);
+      _showUploadMessage('Main image uploaded.');
+    } catch (e) {
+      _showUploadMessage('Image upload failed: $e');
+    } finally {
+      if (mounted) setState(() => _isUploadingMainImage = false);
+    }
+  }
+
+  Future<void> _pickAndUploadAdditionalImages() async {
+    setState(() => _isUploadingAdditionalImages = true);
+    try {
+      final files = await _imagePicker.pickMultiImage();
+      if (files.isEmpty) return;
+
+      final uploadedUrls = <String>[];
+      for (final file in files) {
+        final url = await _uploadProductImage(file);
+        if (url != null) uploadedUrls.add(url);
+      }
+      if (uploadedUrls.isEmpty) return;
+
+      final currentUrls = _imagesController.text
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      currentUrls.addAll(uploadedUrls);
+      setState(() => _imagesController.text = currentUrls.join(', '));
+      _showUploadMessage('${uploadedUrls.length} additional image(s) uploaded.');
+    } catch (e) {
+      _showUploadMessage('Image upload failed: $e');
+    } finally {
+      if (mounted) setState(() => _isUploadingAdditionalImages = false);
+    }
+  }
+
+  List<String> _additionalImageUrls() => _imagesController.text
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+
+  Widget _imagePreview(String url, {double size = 96}) {
+    if (url.trim().isEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+        child: const Icon(Icons.image_outlined, color: Colors.grey),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        url,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+        ),
+      ),
+    );
   }
 
   void _populateForm(Product product) {
@@ -560,6 +733,105 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     );
   }
 
+  Widget _buildSupabaseConfigurationNotice() {
+    if (AppConstants.isSupabaseStorageConfigured) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        border: Border.all(color: Colors.amber.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'Image upload is not configured. Please paste image URL or configure Supabase.',
+        style: TextStyle(color: Colors.black87),
+      ),
+    );
+  }
+
+  Widget _buildMainImageUploader() {
+    final isUploading = _isUploadingMainImage;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSupabaseConfigurationNotice(),
+        const Text('Main product image', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _imageUrlController,
+              builder: (_, value, __) => _imagePreview(value.text),
+            ),
+            ElevatedButton.icon(
+              onPressed: isUploading ? null : _pickAndUploadMainImage,
+              icon: isUploading
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.cloud_upload_outlined),
+              label: Text(isUploading ? 'Uploading...' : 'Upload main image'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _imageUrlController,
+          decoration: const InputDecoration(
+            labelText: 'Main Image URL (optional fallback)',
+            hintText: 'Paste an existing image URL or upload above',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdditionalImagesUploader() {
+    final isUploading = _isUploadingAdditionalImages;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Additional product images', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _imagesController,
+          builder: (_, __, ___) {
+            final urls = _additionalImageUrls();
+            if (urls.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: urls.map((url) => _imagePreview(url, size: 72)).toList(),
+              ),
+            );
+          },
+        ),
+        ElevatedButton.icon(
+          onPressed: isUploading ? null : _pickAndUploadAdditionalImages,
+          icon: isUploading
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.add_photo_alternate_outlined),
+          label: Text(isUploading ? 'Uploading...' : 'Upload additional images'),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _imagesController,
+          decoration: const InputDecoration(
+            labelText: 'Additional Image URLs (optional comma-separated fallback)',
+            hintText: 'url1, url2, url3',
+          ),
+          maxLines: 3,
+        ),
+      ],
+    );
+  }
+
   Widget _buildAddProductForm(bool isMobile) {
     return SingleChildScrollView(
       child: Container(
@@ -631,10 +903,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                     ],
                   ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(labelText: 'Main Image URL'),
-              ),
+              _buildMainImageUploader(),
               const SizedBox(height: 16),
               // Category Selection
               DropdownButtonFormField<int>(
@@ -648,14 +917,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 onChanged: (v) => setState(() => _selectedCategoryId = v),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _imagesController,
-                decoration: const InputDecoration(
-                  labelText: 'Additional Image URLs (Comma separated)',
-                  hintText: 'url1, url2, url3',
-                ),
-                maxLines: 3,
-              ),
+              _buildAdditionalImagesUploader(),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _specificationsController,
