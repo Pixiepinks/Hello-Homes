@@ -143,21 +143,38 @@ class AuthController extends Controller
         $email = strtolower(trim($request->email));
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
         $adminEmails = $this->adminEmails();
-        $passwordMatches = $user && Hash::check($request->password, $user->password);
-        $emailIsAdmin = $user && in_array(strtolower($user->email), $adminEmails, true);
+        $passwordMatches = $user ? Hash::check($request->password, $user->password) : false;
+        $isAdminEmail = $user ? in_array(strtolower($user->email), $adminEmails, true) : false;
 
-        if (!$user || !$passwordMatches || !$emailIsAdmin) {
+        Log::info('ADMIN LOGIN', [
+            'email' => $email,
+            'user_exists' => $user ? true : false,
+            'is_admin_email' => $isAdminEmail,
+            'password_matches' => $passwordMatches,
+        ]);
+
+        if (!$user || !$passwordMatches || !$isAdminEmail) {
             Log::warning('Admin login failed', [
                 'email' => $email,
                 'user_exists' => (bool) $user,
-                'email_is_admin' => (bool) $emailIsAdmin,
-                'password_hash_matches' => (bool) $passwordMatches,
+                'is_admin_email' => (bool) $isAdminEmail,
+                'password_matches' => (bool) $passwordMatches,
             ]);
 
             return response()->json(['message' => 'Invalid admin credentials.'], 401);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        try {
+            $token = $user->createToken('auth_token')->plainTextToken;
+        } catch (\Throwable $e) {
+            Log::error('Admin token creation failed', [
+                'email' => $email,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
 
         Notification::create([
             'user_id' => $user->id,
