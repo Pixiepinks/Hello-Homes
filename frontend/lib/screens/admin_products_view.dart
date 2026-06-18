@@ -734,20 +734,46 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   }
 
   Widget _buildSupabaseConfigurationNotice() {
-    if (AppConstants.isSupabaseStorageConfigured) return const SizedBox.shrink();
+    final urlConfigured = AppConstants.supabaseUrl.isNotEmpty;
+    final anonKeyConfigured = AppConstants.supabaseAnonKey.isNotEmpty;
+    final bucketName = AppConstants.supabaseProductBucket;
+    final isConfigured = AppConstants.isSupabaseStorageConfigured;
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        border: Border.all(color: Colors.amber.shade200),
+        color: isConfigured ? Colors.green.shade50 : Colors.amber.shade50,
+        border: Border.all(
+          color: isConfigured ? Colors.green.shade200 : Colors.amber.shade200,
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'Image upload is not configured. Please paste image URL or configure Supabase.',
-        style: TextStyle(color: Colors.black87),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isConfigured) ...[
+            const Text(
+              'Image upload is not configured. Please paste image URL or configure Supabase.',
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const Text(
+            'Supabase upload configuration',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text('Supabase URL configured: ${urlConfigured ? 'yes' : 'no'}'),
+          Text('Anon key configured: ${anonKeyConfigured ? 'yes' : 'no'}'),
+          Text(
+            'Bucket name: ${bucketName.isEmpty ? '(not configured)' : bucketName}',
+          ),
+        ],
       ),
     );
   }

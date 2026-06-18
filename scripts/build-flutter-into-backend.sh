@@ -14,7 +14,11 @@ fi
 
 cd "${FRONTEND_DIR}"
 flutter pub get
-flutter build web --release --base-href /
+flutter build web --release --base-href / \
+  --dart-define="API_BASE_URL=${API_BASE_URL:-}" \
+  --dart-define="SUPABASE_URL=${SUPABASE_URL:-}" \
+  --dart-define="SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}" \
+  --dart-define="SUPABASE_PRODUCT_BUCKET=${SUPABASE_PRODUCT_BUCKET:-product-images}"
 
 mkdir -p "${BACKEND_PUBLIC_DIR}"
 
