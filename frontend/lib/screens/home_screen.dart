@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             _buildAutoSlider(context),
-            const SizedBox(height: 60),
+            const _HomepagePromoBanner(),
             _buildSectionTitle(context, 'Top Categories', 'Curated essentials for every room'),
             const SizedBox(height: 30),
             _buildCategoryGrid(context),
@@ -199,6 +199,75 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _HomepagePromoBanner extends StatefulWidget {
+  const _HomepagePromoBanner();
+
+  @override
+  State<_HomepagePromoBanner> createState() => _HomepagePromoBannerState();
+}
+
+class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 16, bottom: 24),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: GestureDetector(
+            onTap: () => context.go('/products'),
+            child: AnimatedScale(
+              scale: _isHovered ? 1.02 : 1.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.ease,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  'assets/images/home-banner.png',
+                  width: double.infinity,
+                  fit: BoxFit.fitWidth,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const _PromoBannerPlaceholder();
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PromoBannerPlaceholder extends StatelessWidget {
+  const _PromoBannerPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 5,
+      child: Container(
+        width: double.infinity,
+        color: AppTheme.backgroundLight,
+        alignment: Alignment.center,
+        child: Text(
+          'Hello Homes Promotion Banner',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppTheme.textMuted,
+              ),
+        ),
       ),
     );
   }
