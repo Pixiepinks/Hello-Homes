@@ -204,46 +204,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _HomepagePromoBanner extends StatefulWidget {
+class _HomepagePromoBanner extends StatelessWidget {
   const _HomepagePromoBanner();
 
   @override
-  State<_HomepagePromoBanner> createState() => _HomepagePromoBannerState();
-}
-
-class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 16, bottom: 24),
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (_) => setState(() => _isHovered = true),
-          onExit: (_) => setState(() => _isHovered = false),
-          child: GestureDetector(
-            onTap: () => context.go('/products'),
-            child: AnimatedScale(
-              scale: _isHovered ? 1.02 : 1.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.ease,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/home-banner.png',
-                  width: double.infinity,
-                  fit: BoxFit.fitWidth,
-                  alignment: Alignment.center,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const _PromoBannerPlaceholder();
-                  },
-                ),
-              ),
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => context.go('/products'),
+          child: Image.asset(
+            'assets/images/home-banner.png',
+            width: double.infinity,
+            fit: BoxFit.fitWidth,
+            alignment: Alignment.center,
+            errorBuilder: (context, error, stackTrace) {
+              return const _PromoBannerPlaceholder();
+            },
           ),
         ),
       ),
