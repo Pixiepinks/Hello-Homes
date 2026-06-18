@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        $this->call(AdminUserSeeder::class);
+
         \DB::table('categories')->insert([
             ['title' => 'Electronics', 'subtitle' => 'High Performance', 'image_url' => 'https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=800&auto=format&fit=crop'],
             ['title' => 'Large Appliances', 'subtitle' => 'Smart living solutions', 'image_url' => 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop'],

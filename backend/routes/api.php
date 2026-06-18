@@ -30,6 +30,7 @@ Route::get('/delivery-options', [DeliveryOptionController::class, 'index']);
 Route::get('/auth/check-email', [AuthController::class, 'checkEmail']);
 Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/auth/admin-login', [AuthController::class, 'adminLogin']);
 
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -37,32 +38,34 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/details', [AuthController::class, 'updateDetails']);
     Route::get('/user/orders', [OrderController::class, 'userOrders']);
     
-    // Product Management (Admin)
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    Route::middleware('admin')->group(function () {
+        // Product Management (Admin)
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
-    // Admin Resources
-    Route::apiResource('categories', CategoryController::class)->except(['index']);
-    Route::apiResource('customers', CustomerController::class);
+        // Admin Resources
+        Route::apiResource('categories', CategoryController::class)->except(['index']);
+        Route::apiResource('customers', CustomerController::class);
 
-    // Admin Order Routes
-    Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/dashboard/stats', [OrderController::class, 'stats']);
-    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
-    Route::delete('/orders/{id}/slip', [OrderController::class, 'deleteSlip']);
+        // Admin Order Routes
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/dashboard/stats', [OrderController::class, 'stats']);
+        Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+        Route::delete('/orders/{id}/slip', [OrderController::class, 'deleteSlip']);
 
-    // Delivery Options
-    Route::apiResource('delivery-options', DeliveryOptionController::class)->except(['index']);
-    Route::post('/delivery-options/bulk-update-products', [DeliveryOptionController::class, 'bulkUpdateProducts']);
-    Route::post('/delivery-options/update-all-products', [DeliveryOptionController::class, 'updateAllProducts']);
+        // Delivery Options
+        Route::apiResource('delivery-options', DeliveryOptionController::class)->except(['index']);
+        Route::post('/delivery-options/bulk-update-products', [DeliveryOptionController::class, 'bulkUpdateProducts']);
+        Route::post('/delivery-options/update-all-products', [DeliveryOptionController::class, 'updateAllProducts']);
 
-    // Notifications
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
-    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        // Notifications
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
+        Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 
-    // Bank Details (Admin)
-    Route::apiResource('bank-details', BankDetailController::class)->except(['active']);
+        // Bank Details (Admin)
+        Route::apiResource('bank-details', BankDetailController::class)->except(['active']);
+    });
 });

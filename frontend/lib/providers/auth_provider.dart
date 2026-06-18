@@ -70,6 +70,27 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  Future<bool> adminLogin(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.apiUrl}/auth/admin-login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email, 'password': password}),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        _token = data['access_token'];
+        _user = data['user'];
+        _isAdmin = data['is_admin'] ?? false;
+        notifyListeners();
+        return _isAdmin;
+      }
+    } catch (e) {
+      debugPrint('Error logging in as admin: $e');
+    }
+    return false;
+  }
+
   Future<bool> fetchUser() async {
     if (_token == null) return false;
     try {
