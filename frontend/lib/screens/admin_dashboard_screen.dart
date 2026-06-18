@@ -155,7 +155,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => context.go('/login'),
+            onPressed: () {
+              context.read<AuthProvider>().logout();
+              context.go('/login');
+            },
             tooltip: 'Logout',
           ),
         ],

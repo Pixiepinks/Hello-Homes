@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context.go('/profile');
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid or expired OTP.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.read<AuthProvider>().lastAuthError ?? 'Invalid or expired OTP.')));
       }
     }
   }
@@ -104,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (success) {
         context.go('/admin');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid admin credentials.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.read<AuthProvider>().lastAuthError ?? 'Invalid admin credentials.')));
       }
     }
   }
@@ -144,6 +144,14 @@ class _LoginScreenState extends State<LoginScreen> {
               Text('Welcome Back', style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 8),
               Text(_adminPasswordMode ? 'Enter admin credentials' : (_otpSent ? 'Enter OTP sent to your email' : 'Enter your email to receive an OTP'), style: const TextStyle(color: AppTheme.textMuted)),
+              if (_adminPasswordMode) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Admin login is available at /login and will only continue to /admin after successful authentication.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                ),
+              ],
               const SizedBox(height: 32),
               TextFormField(
                 controller: _emailController,
