@@ -26,17 +26,14 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
         preferredSize: Size.fromHeight(SecondaryCategoryNavBar.desktopHeight),
         child: SecondaryCategoryNavBar(),
       ),
+      automaticallyImplyLeading: showBackButton,
+      titleSpacing: showBackButton ? null : (isMobile ? 12 : 16),
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.pop(),
             )
-          : (isMobile
-              ? IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                )
-              : null),
+          : null,
       title: Row(
         children: [
           InkWell(
