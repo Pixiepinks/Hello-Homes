@@ -33,8 +33,7 @@
   "steps": {
     "build": {
       "commands": [
-        "chmod +x scripts/build-frontend.sh",
-        "scripts/build-frontend.sh"
+        "..."
       ]
     }
   },

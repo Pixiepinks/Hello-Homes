@@ -4,16 +4,7 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 COPY . .
-ARG SUPABASE_URL
-ARG SUPABASE_ANON_KEY
-ARG SUPABASE_PRODUCT_BUCKET
-ENV SUPABASE_URL=$SUPABASE_URL
-ENV SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
-ENV SUPABASE_PRODUCT_BUCKET=$SUPABASE_PRODUCT_BUCKET
-RUN flutter build web --release --base-href / \
-  --dart-define=SUPABASE_URL=$SUPABASE_URL \
-  --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-  --dart-define=SUPABASE_PRODUCT_BUCKET=$SUPABASE_PRODUCT_BUCKET
+RUN flutter build web --release --base-href /
 
 FROM caddy:2-alpine
 COPY --from=build /app/build/web /srv
