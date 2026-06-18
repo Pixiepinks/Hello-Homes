@@ -70,24 +70,120 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: const GlobalAppBar(),
       drawer: const GlobalDrawer(),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildAutoSlider(context),
-            const _HomepagePromoBanner(),
-            _buildSectionTitle(context, 'Top Categories', 'Curated essentials for every room'),
-            const SizedBox(height: 30),
-            _buildCategoryGrid(context),
-            const SizedBox(height: 60),
-            _buildSectionTitle(context, 'Trending Now', 'Most popular items this week'),
-            const SizedBox(height: 30),
-            _buildProductGrid(context),
-            const SizedBox(height: 80),
-            const GlobalFooter(),
-          ],
-        ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildAutoSlider(context),
+                  const _HomepagePromoBanner(),
+                  _buildSectionTitle(
+                    context,
+                    'Best Offers',
+                    'Handpicked deals just for you',
+                  ),
+                  const SizedBox(height: 30),
+                  _buildBestOffersSection(context),
+                  const SizedBox(height: 60),
+                  _buildSectionTitle(
+                    context,
+                    'Top Categories',
+                    'Curated essentials for every room',
+                  ),
+                  const SizedBox(height: 30),
+                  _buildCategoryGrid(context),
+                  const SizedBox(height: 60),
+                  _buildSectionTitle(
+                    context,
+                    'Trending Now',
+                    'Most popular items this week',
+                  ),
+                  const SizedBox(height: 30),
+                  _buildProductGrid(context),
+                  const SizedBox(height: 80),
+                  const GlobalFooter(),
+                ],
+              ),
+            ),
+    );
+  }
+
+  List<Product> get _bestOfferProducts {
+    final offers = _products
+        .where(
+          (product) => product.isOnSale || product.price < product.originalPrice,
+        )
+        .toList();
+
+    if (offers.isEmpty) {
+      return [];
+    }
+
+    offers.sort((a, b) {
+      final aDiscount = a.originalPrice > 0
+          ? (a.originalPrice - a.price) / a.originalPrice
+          : 0.0;
+      final bDiscount = b.originalPrice > 0
+          ? (b.originalPrice - b.price) / b.originalPrice
+          : 0.0;
+      return bDiscount.compareTo(aDiscount);
+    });
+
+    return offers.take(8).toList();
+  }
+
+  Widget _buildBestOffersSection(BuildContext context) {
+    final bestOffers = _bestOfferProducts;
+    if (bestOffers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 800;
+          if (isMobile) {
+            return SizedBox(
+              height: 360,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: bestOffers.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 16),
+                itemBuilder: (context, index) {
+                  final product = bestOffers[index];
+                  return SizedBox(
+                    width: 260,
+                    child: HoverProductCard(
+                      product: product,
+                      onTap: () => context.go('/product/${product.id}'),
+                    ),
+                  );
+                },
+              ),
+            );
+          }
+
+          final itemCount = bestOffers.length > 4 ? 4 : bestOffers.length;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: constraints.maxWidth > 1200 ? 4 : 2,
+              childAspectRatio: 0.75,
+              crossAxisSpacing: 24,
+              mainAxisSpacing: 24,
+            ),
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              final product = bestOffers[index];
+              return HoverProductCard(
+                product: product,
+                onTap: () => context.go('/product/${product.id}'),
+              );
+            },
+          );
+        },
       ),
     );
   }
