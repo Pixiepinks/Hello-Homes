@@ -14,6 +14,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isAdmin = false;
   bool _isLoadingSession = true;
   String? _lastAuthError;
+  String? _lastAuthDebugMessage;
 
   AuthProvider() {
     _loadSession();
@@ -25,6 +26,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAdmin => _isAdmin;
   bool get isLoadingSession => _isLoadingSession;
   String? get lastAuthError => _lastAuthError;
+  String? get lastAuthDebugMessage => _lastAuthDebugMessage;
 
   Future<void> _loadSession() async {
     try {
@@ -129,12 +131,19 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> adminLogin(String email, String password) async {
     _lastAuthError = null;
+    _lastAuthDebugMessage = null;
+    final adminLoginUrl = Uri.parse('${AppConstants.apiUrl}/auth/admin-login');
+    debugPrint('ADMIN LOGIN frontend request: POST $adminLoginUrl');
+
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.apiUrl}/auth/admin-login'),
+        adminLoginUrl,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
+      _lastAuthDebugMessage = 'POST $adminLoginUrl returned ${response.statusCode}';
+      debugPrint('ADMIN LOGIN frontend response: $_lastAuthDebugMessage');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _token = data['access_token'];
@@ -145,10 +154,14 @@ class AuthProvider extends ChangeNotifier {
         return _isAdmin;
       }
 
-      _lastAuthError = _extractErrorMessage(response.body, 'Invalid admin credentials.');
+      _lastAuthError = _extractErrorMessage(
+        response.body,
+        'Admin login failed with HTTP ${response.statusCode}.',
+      );
     } catch (e) {
-      debugPrint('Error logging in as admin: $e');
-      _lastAuthError = 'Unable to log in. Please check your connection and try again.';
+      _lastAuthDebugMessage = 'POST $adminLoginUrl failed before receiving a response';
+      debugPrint('Error logging in as admin at $adminLoginUrl: $e');
+      _lastAuthError = 'Unable to reach admin login endpoint $adminLoginUrl. Please check the deployed API URL, network, and CORS settings.';
     }
     return false;
   }
@@ -200,6 +213,7 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     _isAdmin = false;
     _lastAuthError = null;
+    _lastAuthDebugMessage = null;
     _clearPersistedSession();
     notifyListeners();
   }

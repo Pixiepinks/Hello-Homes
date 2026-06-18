@@ -104,7 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (success) {
         context.go('/admin');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.read<AuthProvider>().lastAuthError ?? 'Invalid admin credentials.')));
+        final auth = context.read<AuthProvider>();
+        final error = auth.lastAuthError ?? 'Admin login failed.';
+        final debugMessage = auth.lastAuthDebugMessage;
+        final message = debugMessage == null ? error : '$error\n$debugMessage';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }
