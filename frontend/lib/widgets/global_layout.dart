@@ -115,19 +115,21 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class SecondaryCategoryNavBar extends StatelessWidget {
-  static const double desktopHeight = 54;
-  static const double mobileHeight = 46;
+  static const double desktopHeight = 44;
+  static const double mobileHeight = 44;
 
   const SecondaryCategoryNavBar({super.key});
 
-  static const List<String> _items = [
-    'All Categories',
+  static const List<String> _centerItems = [
     'Brands',
     'Deals',
     'New Arrivals',
     'Furniture',
     'Appliances',
     'Electronics',
+  ];
+
+  static const List<String> _rightItems = [
     'Track your order',
     'Contact',
   ];
@@ -141,29 +143,58 @@ class SecondaryCategoryNavBar extends StatelessWidget {
       height: height,
       width: double.infinity,
       color: const Color(0xFF0B74B8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: isMobile
-            ? const BouncingScrollPhysics()
-            : const NeverScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: MediaQuery.of(context).size.width,
-            minHeight: height,
-          ),
-          child: Row(
-            mainAxisAlignment:
-                isMobile ? MainAxisAlignment.start : MainAxisAlignment.center,
-            children: [
-              for (final item in _items)
-                _SecondaryCategoryNavItem(
-                  label: item,
-                  showMenuIcon: item == 'All Categories',
-                ),
-            ],
-          ),
-        ),
-      ),
+      child: isMobile
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  const _SecondaryCategoryNavItem(
+                    label: 'All Categories',
+                    showMenuIcon: true,
+                  ),
+                  for (final item in _centerItems)
+                    _SecondaryCategoryNavItem(label: item),
+                  for (final item in _rightItems)
+                    _SecondaryCategoryNavItem(label: item),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 36),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _SecondaryCategoryNavItem(
+                        label: 'All Categories',
+                        showMenuIcon: true,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (final item in _centerItems)
+                          _SecondaryCategoryNavItem(label: item),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        for (final item in _rightItems)
+                          _SecondaryCategoryNavItem(label: item),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -185,7 +216,7 @@ class _SecondaryCategoryNavItem extends StatelessWidget {
       onTap: () {},
       child: Container(
         height: double.infinity,
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 14 : 18),
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 14 : 12),
         alignment: Alignment.center,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -201,7 +232,7 @@ class _SecondaryCategoryNavItem extends StatelessWidget {
               overflow: TextOverflow.visible,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
