@@ -160,22 +160,19 @@ class SecondaryCategoryNavBar extends StatelessWidget {
                 ],
               ),
             )
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 36),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _SecondaryCategoryNavItem(
-                        label: 'All Categories',
-                        showMenuIcon: true,
-                      ),
-                    ),
+          : Row(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 36),
+                  child: _SecondaryCategoryNavItem(
+                    label: 'All Categories',
+                    showMenuIcon: true,
                   ),
-                  Expanded(
-                    flex: 2,
+                ),
+                Expanded(
+                  child: Center(
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         for (final item in _centerItems)
@@ -183,17 +180,19 @@ class SecondaryCategoryNavBar extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        for (final item in _rightItems)
-                          _SecondaryCategoryNavItem(label: item),
-                      ],
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 36),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      for (final item in _rightItems)
+                        _SecondaryCategoryNavItem(label: item),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
     );
   }
