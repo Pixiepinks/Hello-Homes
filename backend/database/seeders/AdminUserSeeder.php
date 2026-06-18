@@ -15,22 +15,21 @@ class AdminUserSeeder extends Seeder
      */
     public function run()
     {
-        $email = config('admin.seed_email');
+        $email = strtolower(trim(config('admin.seed_email')));
         $password = config('admin.seed_password');
 
         if (!$email || !$password) {
             return;
         }
 
-        User::updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => config('admin.seed_name'),
-                'password' => Hash::make($password),
-                'email_verified_at' => now(),
-                'otp' => null,
-                'otp_expires_at' => null,
-            ]
-        );
+        $user = User::firstOrNew(['email' => $email]);
+
+        $user->forceFill([
+            'name' => config('admin.seed_name'),
+            'password' => Hash::make($password),
+            'email_verified_at' => now(),
+            'otp' => null,
+            'otp_expires_at' => null,
+        ])->save();
     }
 }

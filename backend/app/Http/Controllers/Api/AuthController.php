@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Notification;
 
@@ -112,8 +113,8 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        $adminEmails = config('admin.emails', []);
-        $isAdmin = in_array($user->email, $adminEmails, true);
+        $adminEmails = $this->adminEmails();
+        $isAdmin = in_array(strtolower($user->email), $adminEmails, true);
 
         // Notify Successful Login
         Notification::create([
@@ -139,10 +140,20 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-        $adminEmails = config('admin.emails', []);
+        $email = strtolower(trim($request->email));
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        $adminEmails = $this->adminEmails();
+        $passwordMatches = $user && Hash::check($request->password, $user->password);
+        $emailIsAdmin = $user && in_array(strtolower($user->email), $adminEmails, true);
 
-        if (!$user || !Hash::check($request->password, $user->password) || !in_array($user->email, $adminEmails, true)) {
+        if (!$user || !$passwordMatches || !$emailIsAdmin) {
+            Log::warning('Admin login failed', [
+                'email' => $email,
+                'user_exists' => (bool) $user,
+                'email_is_admin' => (bool) $emailIsAdmin,
+                'password_hash_matches' => (bool) $passwordMatches,
+            ]);
+
             return response()->json(['message' => 'Invalid admin credentials.'], 401);
         }
 
@@ -162,6 +173,16 @@ class AuthController extends Controller
             'user' => $user,
             'is_admin' => true,
         ]);
+    }
+
+    private function adminEmails(): array
+    {
+        return array_values(array_filter(array_unique(array_map(
+            function ($email) {
+                return strtolower(trim($email));
+            },
+            config('admin.emails', [])
+        ))));
     }
 
     public function getUser(Request $request)
