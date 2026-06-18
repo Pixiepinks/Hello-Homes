@@ -188,7 +188,19 @@ class _ProductSearchBarState extends State<ProductSearchBar> {
                                 ),
                               ),
                               title: Text(product['title'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              subtitle: Text('\$${product['price']}', style: const TextStyle(color: AppTheme.accentOrange, fontWeight: FontWeight.bold)),
+                              subtitle: Row(
+                                children: [
+                                  Text(
+                                    '\$${product['original_price'] ?? product['price']}',
+                                    style: const TextStyle(color: AppTheme.textMuted, decoration: TextDecoration.lineThrough),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '\$${product['price']}',
+                                    style: const TextStyle(color: AppTheme.accentOrange, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
                               onTap: () {
                                 _hideDropdown();
                                 _controller.clear();

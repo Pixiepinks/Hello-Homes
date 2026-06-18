@@ -110,7 +110,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              childAspectRatio: 0.75,
+              childAspectRatio: 0.86,
               crossAxisSpacing: 24,
               mainAxisSpacing: 24,
             ),
