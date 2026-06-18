@@ -19,8 +19,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isSearchExpanded = false;
-  final TextEditingController _searchController = TextEditingController();
   List<Product> _products = [];
   List<Category> _categories = [];
   bool _isLoading = true;
@@ -65,12 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoadingCategories = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -130,9 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAutoSlider(BuildContext context) {
-    // Top 5 trending items for slider
-    final sliderItems = _products.take(5).toList();
-    return _HeroAutoSlider(items: sliderItems);
+    return const _HeroAutoSlider();
   }
 
   Widget _buildSectionTitle(BuildContext context, String title, String subtitle) {
@@ -216,34 +206,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // Auto Slider Widget
 class _HeroAutoSlider extends StatefulWidget {
-  final List<Product> items;
-  const _HeroAutoSlider({required this.items});
+  const _HeroAutoSlider();
+
+  static const List<String> _bannerImages = [
+    'assets/images/hero/hero_01.png',
+    'assets/images/hero/hero_02.png',
+    'assets/images/hero/hero_03.png',
+    'assets/images/hero/hero_04.png',
+    'assets/images/hero/hero_05.png',
+    'assets/images/hero/hero_06.png',
+    'assets/images/hero/hero_07.png',
+    'assets/images/hero/hero_08.png',
+    'assets/images/hero/hero_09.png',
+    'assets/images/hero/hero_10.png',
+    'assets/images/hero/hero_11.png',
+    'assets/images/hero/hero_12.png',
+    'assets/images/hero/hero_13.png',
+    'assets/images/hero/hero_14.png',
+    'assets/images/hero/hero_15.png',
+  ];
 
   @override
   State<_HeroAutoSlider> createState() => _HeroAutoSliderState();
 }
 
 class _HeroAutoSliderState extends State<_HeroAutoSlider> {
-  late PageController _pageController;
+  static const int _initialPage = 15000;
+  late final PageController _pageController;
   int _currentPage = 0;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(initialPage: _initialPage);
+    _currentPage = _initialPage % _HeroAutoSlider._bannerImages.length;
     _startAutoSlide();
   }
 
   void _startAutoSlide() {
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (widget.items.isEmpty) return;
-      int nextPage = (_currentPage + 1) % widget.items.length;
       if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.fastOutSlowIn,
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
         );
       }
     });
@@ -258,125 +264,110 @@ class _HeroAutoSliderState extends State<_HeroAutoSlider> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.items.isEmpty) return const SizedBox();
     final isMobile = MediaQuery.of(context).size.width < 800;
+    final bannerHeight = isMobile ? 200.0 : 340.0;
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      height: isMobile ? 400 : 500,
-      margin: EdgeInsets.all(isMobile ? 12 : 24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryBlue.withAlpha(40),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
+      height: bannerHeight,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index % _HeroAutoSlider._bannerImages.length;
+              });
+            },
+            itemBuilder: (context, index) {
+              final imagePath = _HeroAutoSlider
+                  ._bannerImages[index % _HeroAutoSlider._bannerImages.length];
+              return Image.asset(
+                imagePath,
+                width: double.infinity,
+                height: bannerHeight,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _HeroPlaceholderBanner(imagePath: imagePath);
+                },
+              );
+            },
+          ),
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _HeroAutoSlider._bannerImages.length,
+                (index) {
+                  final isActive = _currentPage == index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: isActive ? 22 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppTheme.accentOrange
+                          : Colors.white.withAlpha(180),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
+    );
+  }
+}
+
+class _HeroPlaceholderBanner extends StatelessWidget {
+  final String imagePath;
+
+  const _HeroPlaceholderBanner({required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryBlue, AppTheme.darkBlue],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-              },
-              itemCount: widget.items.length,
-              itemBuilder: (context, index) {
-                final product = widget.items[index];
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Background Image
-                    CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      fit: BoxFit.cover,
-                    ),
-                    // Gradient Overlay for text readability
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.darkBlue.withAlpha(220),
-                            Colors.transparent,
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-                    // Content
-                    Padding(
-                      padding: EdgeInsets.all(isMobile ? 24.0 : 60.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentOrange,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text('TRENDING', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            product.title,
-                            style: (isMobile 
-                              ? Theme.of(context).textTheme.headlineLarge 
-                              : Theme.of(context).textTheme.displayLarge)?.copyWith(color: Colors.white, height: 1.1),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            product.subtitle,
-                            style: (isMobile
-                              ? Theme.of(context).textTheme.titleMedium
-                              : Theme.of(context).textTheme.titleLarge)?.copyWith(color: Colors.white70),
-                          ),
-                          SizedBox(height: isMobile ? 24 : 40),
-                          ElevatedButton(
-                            onPressed: () => context.go('/product/${product.id}'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryBlue,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isMobile ? 24 : 32, 
-                                vertical: isMobile ? 12 : 20
-                              ),
-                            ),
-                            child: const Text('Shop Now'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+            const Icon(Icons.image_outlined, color: Colors.white70, size: 44),
+            const SizedBox(height: 12),
+            Text(
+              'Hero banner placeholder',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(color: Colors.white),
             ),
-            // Dots Indicator
-            Positioned(
-              bottom: 24,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.items.length, (index) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: _currentPage == index ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index ? AppTheme.accentOrange : Colors.white54,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  );
-                }),
-              ),
+            const SizedBox(height: 4),
+            Text(
+              imagePath,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.white70),
             ),
           ],
         ),
