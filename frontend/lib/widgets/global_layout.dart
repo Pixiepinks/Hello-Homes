@@ -1,5 +1,6 @@
 import '../utils/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
@@ -36,9 +37,9 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           InkWell(
             onTap: () => context.go('/'),
-            child: Image.asset(
-              'assets/images/hello_homes_logo.png',
-              height: isMobile ? 36 : 48,
+            child: SvgPicture.asset(
+              'assets/images/hello_homes_logo.svg',
+              height: isMobile ? 40 : 52,
               fit: BoxFit.contain,
             ),
           ),
