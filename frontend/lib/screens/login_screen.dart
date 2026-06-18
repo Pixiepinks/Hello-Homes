@@ -15,17 +15,20 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _otpController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _otpSent = false;
   Timer? _timer;
   int _secondsRemaining = 120;
   bool _canResend = false;
+  bool _adminPasswordMode = false;
 
   @override
   void dispose() {
     _timer?.cancel();
     _emailController.dispose();
     _otpController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -87,6 +90,25 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _handleAdminLogin() async {
+    if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    final success = await context.read<AuthProvider>().adminLogin(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (success) {
+        context.go('/admin');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid admin credentials.')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
               Text('Welcome Back', style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 8),
-              Text(_otpSent ? 'Enter OTP sent to your email' : 'Enter your email to receive an OTP', style: const TextStyle(color: AppTheme.textMuted)),
+              Text(_adminPasswordMode ? 'Enter admin credentials' : (_otpSent ? 'Enter OTP sent to your email' : 'Enter your email to receive an OTP'), style: const TextStyle(color: AppTheme.textMuted)),
               const SizedBox(height: 32),
               TextFormField(
                 controller: _emailController,
@@ -129,7 +151,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 enabled: !_otpSent,
               ),
               const SizedBox(height: 16),
-              if (_otpSent) ...[
+              if (_adminPasswordMode) ...[
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(labelText: 'Admin Password'),
+                  obscureText: true,
+                ),
+              ] else if (_otpSent) ...[
                 TextFormField(
                   controller: _otpController,
                   decoration: const InputDecoration(labelText: '6-digit OTP'),
@@ -140,11 +168,23 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : (_otpSent ? _handleLogin : _handleSendOtp),
+                  onPressed: _isLoading ? null : (_adminPasswordMode ? _handleAdminLogin : (_otpSent ? _handleLogin : _handleSendOtp)),
                   child: _isLoading 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : Text(_otpSent ? 'Verify & Login' : 'Send OTP'),
+                      : Text(_adminPasswordMode ? 'Admin Login' : (_otpSent ? 'Verify & Login' : 'Send OTP')),
                 ),
+              ),
+              TextButton(
+                onPressed: _isLoading ? null : () {
+                  setState(() {
+                    _adminPasswordMode = !_adminPasswordMode;
+                    _otpSent = false;
+                    _otpController.clear();
+                    _passwordController.clear();
+                    _timer?.cancel();
+                  });
+                },
+                child: Text(_adminPasswordMode ? 'Use email OTP login' : 'Admin password login'),
               ),
               if (_otpSent)
                 Padding(

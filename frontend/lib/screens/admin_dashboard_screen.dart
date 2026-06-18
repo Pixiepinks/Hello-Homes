@@ -32,7 +32,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchStats();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      if (!auth.isAuthenticated || !auth.isAdmin) {
+        context.go('/login');
+        return;
+      }
+      _fetchStats();
+    });
     if (widget.initialOrderId != null) {
       _selectedIndex = 3; // Orders view
     }

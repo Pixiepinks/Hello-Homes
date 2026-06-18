@@ -112,8 +112,8 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        $adminEmails = array_map('trim', explode(',', env('ADMIN_EMAILS', '')));
-        $isAdmin = in_array($user->email, $adminEmails);
+        $adminEmails = config('admin.emails', []);
+        $isAdmin = in_array($user->email, $adminEmails, true);
 
         // Notify Successful Login
         Notification::create([
@@ -129,6 +129,38 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => $user,
             'is_admin' => $isAdmin,
+        ]);
+    }
+
+    public function adminLogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        $adminEmails = config('admin.emails', []);
+
+        if (!$user || !Hash::check($request->password, $user->password) || !in_array($user->email, $adminEmails, true)) {
+            return response()->json(['message' => 'Invalid admin credentials.'], 401);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Successful Login',
+            'message' => "Admin password login successful at " . now()->format('h:i A') . ".",
+            'type' => 'activity',
+        ]);
+
+        return response()->json([
+            'message' => 'Login successful',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user,
+            'is_admin' => true,
         ]);
     }
 
