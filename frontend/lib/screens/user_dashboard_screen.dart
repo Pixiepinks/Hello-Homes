@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import '../utils/price_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -138,7 +139,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('${item['quantity']}x ${item['product_title']}'),
-                      Text('\$${item['price']}'),
+                      Text(formatDynamicPrice(item['price'])),
                     ],
                   ),
                 ))),
@@ -147,7 +148,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text('\$${order['total_amount']}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue, fontSize: 18)),
+                  Text(formatDynamicPrice(order['total_amount']), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue, fontSize: 18)),
                 ],
               ),
               if (order['payment_slip_path'] != null) ...[
@@ -374,7 +375,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 const SizedBox(height: 16),
                 _buildStatCard(
                   'Total Spent',
-                  '\$${totalSpent.toStringAsFixed(2)}',
+                  formatPrice(totalSpent),
                   Icons.attach_money,
                   AppTheme.accentOrange,
                 ),
@@ -394,7 +395,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 Expanded(
                   child: _buildStatCard(
                     'Total Spent',
-                    '\$${totalSpent.toStringAsFixed(2)}',
+                    formatPrice(totalSpent),
                     Icons.attach_money,
                     AppTheme.accentOrange,
                   ),
@@ -637,7 +638,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                               )
                             ],
                           ),
-                          Text('\$${order['total_amount']}', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.primaryBlue)),
+                          Text(formatDynamicPrice(order['total_amount']), style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.primaryBlue)),
                         ],
                       ),
                     ),

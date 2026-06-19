@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import '../utils/price_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -149,7 +150,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('${item['quantity']}x ${item['product_title']}'),
-                        Text('\$${(double.tryParse(item['price'].toString()) ?? 0 * item['quantity']).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(formatPrice((double.tryParse(item['price'].toString()) ?? 0) * (int.tryParse(item['quantity'].toString()) ?? 1)), style: const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ))),
@@ -158,7 +159,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Delivery Fee:', style: TextStyle(color: Colors.grey)),
-                    Text('Rs.${order['delivery_fee'] ?? '0.00'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(formatDynamicPrice(order['delivery_fee'] ?? '0'), style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -166,7 +167,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Total Amount:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('Rs.${order['total_amount']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                    Text(formatDynamicPrice(order['total_amount']), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
                   ],
                 ),
                 if (order['payment_slip_path'] != null) ...[
@@ -526,7 +527,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                                     ],
                                   ),
                                 )),
-                                DataCell(Text('Rs.${order['total_amount']}')),
+                                DataCell(Text(formatDynamicPrice(order['total_amount']))),
                                 DataCell(Text(order['created_at'].toString().split('T').first)),
                                 DataCell(Text(order['payment_method'] ?? 'N/A')),
                                 DataCell(

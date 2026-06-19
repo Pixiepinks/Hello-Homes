@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import '../utils/price_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -432,7 +433,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(cartItem.product.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  Text('Rs.${cartItem.product.price.toStringAsFixed(2)}', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                  Text(formatPrice(cartItem.product.price), style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
                 ],
               ),
             ),
@@ -465,18 +466,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Text('${cartItem.quantity}x', style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
               const SizedBox(width: 12),
-              Text('Rs.${(cartItem.product.price * cartItem.quantity).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(formatPrice(cartItem.product.price * cartItem.quantity), style: const TextStyle(fontWeight: FontWeight.bold)),
             ]),
           ]),
         )).toList(),
         const Divider(height: 32),
-        _buildSummaryRow('Subtotal', 'Rs.${subtotal.toStringAsFixed(2)}'),
+        _buildSummaryRow('Subtotal', formatPrice(subtotal)),
         const SizedBox(height: 12),
-        _buildSummaryRow('Shipping Fee', _isLoadingOptions ? 'Calculating...' : 'Rs.${deliveryFee.toStringAsFixed(2)}'),
+        _buildSummaryRow('Shipping Fee', _isLoadingOptions ? 'Calculating...' : formatPrice(deliveryFee)),
         const Divider(height: 32),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text('Total', style: Theme.of(context).textTheme.titleLarge),
-          Text('Rs.${totalAmount.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppTheme.primaryBlue)),
+          Text(formatPrice(totalAmount), style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppTheme.primaryBlue)),
         ]),
       ]),
     );

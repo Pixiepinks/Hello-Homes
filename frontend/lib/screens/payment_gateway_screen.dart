@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../utils/price_formatter.dart';
 
 class PaymentGatewayScreen extends StatefulWidget {
   final double totalAmount;
@@ -95,7 +96,7 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Total Amount:', style: TextStyle(fontSize: 16, color: Colors.black54)),
-                    Text('LKR ${widget.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text(formatPrice(widget.totalAmount), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
                   ],
                 ),
               ),
