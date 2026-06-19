@@ -258,13 +258,15 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth > 1200 ? 4 : (constraints.maxWidth > 800 ? 2 : 1);
+          final crossAxisCount = constraints.maxWidth > 1200
+              ? 4
+              : (constraints.maxWidth > 760 ? 2 : 1);
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              childAspectRatio: 1.5,
+              childAspectRatio: 4 / 3,
               crossAxisSpacing: 24,
               mainAxisSpacing: 24,
             ),
@@ -678,71 +680,173 @@ class _CategoryCardState extends State<_CategoryCard> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.go('/category/${widget.category.id}?title=${Uri.encodeComponent(widget.category.title)}'),
-      child: MouseRegion(
+    final hasSubtitle = widget.category.subtitle.trim().isNotEmpty;
+
+    return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: AppTheme.surfaceWhite,
-          border: Border.all(color: AppTheme.borderLight),
-          boxShadow: _isHovered
-              ? [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 20, offset: const Offset(0, 10))]
-              : [],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: 0,
-              bottom: 0,
-              width: 150,
-              height: 150,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(bottomRight: Radius.circular(16)),
-                child: AnimatedScale(
-                  scale: _isHovered ? 1.1 : 1.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: CachedNetworkImage(
-                    imageUrl: widget.category.imageUrl,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.category.title, style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(widget.category.subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted)),
-                  const Spacer(),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _isHovered ? AppTheme.primaryBlue : AppTheme.backgroundLight,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      color: _isHovered ? Colors.white : AppTheme.textDark,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.darkBlue.withAlpha(_isHovered ? 42 : 22),
+              blurRadius: _isHovered ? 30 : 18,
+              offset: Offset(0, _isHovered ? 18 : 10),
             ),
           ],
         ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => context.go(
+              '/category/${widget.category.id}?title=${Uri.encodeComponent(widget.category.title)}',
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                AnimatedScale(
+                  scale: _isHovered ? 1.07 : 1.0,
+                  duration: const Duration(milliseconds: 420),
+                  curve: Curves.easeOutCubic,
+                  child: CachedNetworkImage(
+                    imageUrl: widget.category.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppTheme.primaryBlue, AppTheme.accentOrange],
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppTheme.primaryBlue, AppTheme.accentOrange],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.category_outlined,
+                        color: Colors.white70,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.darkBlue.withAlpha(212),
+                        AppTheme.primaryBlue.withAlpha(98),
+                        Colors.white.withAlpha(18),
+                        AppTheme.accentOrange.withAlpha(108),
+                      ],
+                      stops: const [0.0, 0.45, 0.72, 1.0],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 230),
+                        child: Text(
+                          widget.category.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                height: 1.05,
+                                letterSpacing: -0.5,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withAlpha(90),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                        ),
+                      ),
+                      if (hasSubtitle) ...[
+                        const SizedBox(height: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 210),
+                          child: Text(
+                            widget.category.subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white.withAlpha(226),
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
+                          transform: Matrix4.translationValues(
+                            _isHovered ? 6 : 0,
+                            0,
+                            0,
+                          ),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isHovered
+                                ? AppTheme.accentOrange
+                                : Colors.white.withAlpha(232),
+                            border: Border.all(color: Colors.white.withAlpha(95)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(55),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            color: _isHovered ? Colors.white : AppTheme.primaryBlue,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
