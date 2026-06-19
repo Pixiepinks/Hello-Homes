@@ -20,6 +20,8 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
   List<HeroBanner> _banners = [];
   bool _loading = true;
   bool _saving = false;
+  bool _savingOrder = false;
+  bool _orderDirty = false;
   bool _productNameOneLine = true;
   int _productsPerRowDesktop = 6;
   bool _showCarouselArrows = true;
@@ -47,6 +49,7 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
       final response = await http.get(Uri.parse('${AppConstants.apiUrl}/hero-banners'));
       if (response.statusCode == 200) {
         _banners = (json.decode(response.body) as List<dynamic>).map((item) => HeroBanner.fromJson(item)).toList();
+        _orderDirty = false;
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -72,6 +75,37 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     if (mounted) {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'UI settings saved' : 'Unable to save UI settings')));
+    }
+  }
+
+  String _bannerLabel(HeroBanner banner) {
+    if (banner.title?.trim().isNotEmpty == true) return banner.title!.trim();
+    final path = Uri.tryParse(banner.imageUrl)?.pathSegments;
+    if (path != null && path.isNotEmpty && path.last.isNotEmpty) return path.last;
+    return 'Banner ${banner.id}';
+  }
+
+  void _moveBanner(int oldIndex, int newIndex) {
+    if (newIndex < 0 || newIndex >= _banners.length || oldIndex == newIndex) return;
+    setState(() {
+      final item = _banners.removeAt(oldIndex);
+      _banners.insert(newIndex, item);
+      _orderDirty = true;
+    });
+  }
+
+  Future<void> _toggleBannerActive(int index, bool isActive) async {
+    final banner = _banners[index];
+    setState(() => _banners[index] = banner.copyWith(isActive: isActive));
+    final response = await http.put(
+      Uri.parse('${AppConstants.apiUrl}/hero-banners/${banner.id}'),
+      headers: _authHeaders,
+      body: json.encode(banner.copyWith(isActive: isActive).toJson()),
+    );
+    if (!mounted) return;
+    if (response.statusCode != 200) {
+      setState(() => _banners[index] = banner);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to update banner status')));
     }
   }
 
@@ -120,14 +154,25 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     );
   }
 
-  Future<void> _deleteBanner(HeroBanner banner) async {
-    await http.delete(Uri.parse('${AppConstants.apiUrl}/hero-banners/${banner.id}'), headers: _authHeaders);
-    _load();
-  }
-
   Future<void> _saveBannerOrder() async {
-    await http.post(Uri.parse('${AppConstants.apiUrl}/hero-banners/order'), headers: _authHeaders, body: json.encode({'banner_ids': _banners.map((b) => b.id).toList()}));
-    _load();
+    setState(() => _savingOrder = true);
+    final response = await http.post(
+      Uri.parse('${AppConstants.apiUrl}/hero-banners/order'),
+      headers: _authHeaders,
+      body: json.encode({'banner_ids': _banners.map((b) => b.id).toList()}),
+    );
+    if (!mounted) return;
+    setState(() => _savingOrder = false);
+    if (response.statusCode == 200) {
+      final saved = (json.decode(response.body) as List<dynamic>).map((item) => HeroBanner.fromJson(item)).toList();
+      setState(() {
+        _banners = saved;
+        _orderDirty = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hero banner order saved')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to save hero banner order')));
+    }
   }
 
   @override
@@ -139,30 +184,78 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
         Text('UI Settings', style: Theme.of(context).textTheme.displaySmall),
         const SizedBox(height: 24),
         _panel('Hero Banners', [
-          Align(alignment: Alignment.centerRight, child: ElevatedButton.icon(onPressed: () => _showBannerDialog(), icon: const Icon(Icons.add), label: const Text('Add Banner'))),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Reorder existing homepage slider images. Use the arrows or drag handle, then click Save Order.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _savingOrder || !_orderDirty ? null : _saveBannerOrder,
+                icon: const Icon(Icons.save),
+                label: Text(_savingOrder ? 'Saving...' : 'Save Order'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
             itemCount: _banners.length,
             onReorder: (oldIndex, newIndex) {
-              setState(() {
-                if (newIndex > oldIndex) newIndex--;
-                final item = _banners.removeAt(oldIndex);
-                _banners.insert(newIndex, item);
-              });
-              _saveBannerOrder();
+              if (newIndex > oldIndex) newIndex--;
+              _moveBanner(oldIndex, newIndex);
             },
             itemBuilder: (context, index) {
               final banner = _banners[index];
-              return ListTile(
+              return Card(
                 key: ValueKey(banner.id),
-                leading: const Icon(Icons.drag_handle),
-                title: Text(banner.title?.isNotEmpty == true ? banner.title! : 'Banner ${banner.id}'),
-                subtitle: Text('${banner.isActive ? 'Enabled' : 'Disabled'} • Order ${index + 1}'),
-                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                  IconButton(icon: const Icon(Icons.edit), onPressed: () => _showBannerDialog(banner)),
-                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteBanner(banner)),
-                ]),
+                margin: const EdgeInsets.only(bottom: 10),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: AppTheme.borderLight)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle, color: AppTheme.textMuted)),
+                      const SizedBox(width: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          banner.imageUrl,
+                          width: 96,
+                          height: 54,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 96,
+                            height: 54,
+                            color: AppTheme.backgroundLight,
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.broken_image, color: AppTheme.textMuted),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_bannerLabel(banner), style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 4),
+                            Text('Current sort_order: ${banner.sortOrder} • New position: ${index + 1}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Switch(value: banner.isActive, onChanged: (value) => _toggleBannerActive(index, value)),
+                      IconButton(tooltip: 'Move up', icon: const Icon(Icons.arrow_upward), onPressed: index == 0 ? null : () => _moveBanner(index, index - 1)),
+                      IconButton(tooltip: 'Move down', icon: const Icon(Icons.arrow_downward), onPressed: index == _banners.length - 1 ? null : () => _moveBanner(index, index + 1)),
+                      IconButton(tooltip: 'Edit banner details', icon: const Icon(Icons.edit), onPressed: () => _showBannerDialog(banner)),
+                    ],
+                  ),
+                ),
               );
             },
           ),
