@@ -38,6 +38,23 @@ class HeroBanner {
 
   const HeroBanner({required this.id, this.title, required this.imageUrl, this.linkUrl, required this.sortOrder, required this.isActive});
 
+  HeroBanner copyWith({String? title, String? imageUrl, String? linkUrl, int? sortOrder, bool? isActive}) => HeroBanner(
+        id: id,
+        title: title ?? this.title,
+        imageUrl: imageUrl ?? this.imageUrl,
+        linkUrl: linkUrl ?? this.linkUrl,
+        sortOrder: sortOrder ?? this.sortOrder,
+        isActive: isActive ?? this.isActive,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'image_url': imageUrl,
+        'link_url': linkUrl,
+        'sort_order': sortOrder,
+        'is_active': isActive,
+      };
+
   factory HeroBanner.fromJson(Map<String, dynamic> json) => HeroBanner(
         id: int.parse(json['id'].toString()),
         title: json['title']?.toString(),

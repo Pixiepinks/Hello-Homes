@@ -497,7 +497,7 @@ class _HeroAutoSlider extends StatefulWidget {
 }
 
 class _HeroAutoSliderState extends State<_HeroAutoSlider> {
-  static const int _initialPage = 15000;
+  static const int _initialPage = 0;
   final List<HeroBanner> _banners = [];
   late final PageController _pageController;
   int _currentPage = 0;
