@@ -573,13 +573,22 @@ class _HeroAutoSliderState extends State<_HeroAutoSlider> {
             onPageChanged: (index) => setState(() => _currentPage = index % _banners.length),
             itemBuilder: (context, index) {
               final banner = _banners[index % _banners.length];
-              final image = CachedNetworkImage(
-                imageUrl: banner.imageUrl,
-                width: double.infinity,
-                height: bannerHeight,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => _HeroPlaceholderBanner(imagePath: banner.imageUrl),
-              );
+              final isRemoteImage = banner.imageUrl.startsWith('http://') || banner.imageUrl.startsWith('https://');
+              final image = isRemoteImage
+                  ? CachedNetworkImage(
+                      imageUrl: banner.imageUrl,
+                      width: double.infinity,
+                      height: bannerHeight,
+                      fit: BoxFit.cover,
+                      errorWidget: (context, url, error) => _HeroPlaceholderBanner(imagePath: banner.imageUrl),
+                    )
+                  : Image.asset(
+                      banner.imageUrl,
+                      width: double.infinity,
+                      height: bannerHeight,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _HeroPlaceholderBanner(imagePath: banner.imageUrl),
+                    );
               if (banner.linkUrl == null || banner.linkUrl!.isEmpty) return image;
               return GestureDetector(onTap: () => context.go(banner.linkUrl!), child: image);
             },

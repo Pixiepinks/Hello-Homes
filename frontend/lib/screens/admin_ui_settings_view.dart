@@ -19,6 +19,7 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
   final _currencyController = TextEditingController(text: 'Rs.');
   List<HeroBanner> _banners = [];
   bool _loading = true;
+  String? _bannerLoadError;
   bool _saving = false;
   bool _savingOrder = false;
   bool _orderDirty = false;
@@ -46,11 +47,16 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     _currencyController.text = settings.currencySymbol;
     _showCarouselArrows = settings.showCarouselArrows;
     try {
+      _bannerLoadError = null;
       final response = await http.get(Uri.parse('${AppConstants.apiUrl}/hero-banners'));
       if (response.statusCode == 200) {
         _banners = (json.decode(response.body) as List<dynamic>).map((item) => HeroBanner.fromJson(item)).toList();
         _orderDirty = false;
+      } else {
+        _bannerLoadError = 'Unable to load hero banners (HTTP ${response.statusCode}).';
       }
+    } catch (e) {
+      _bannerLoadError = 'Unable to load hero banners. Please check your connection and try again.';
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -78,10 +84,18 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     }
   }
 
-  String _bannerLabel(HeroBanner banner) {
-    if (banner.title?.trim().isNotEmpty == true) return banner.title!.trim();
+  bool _isRemoteImage(String imageUrl) => imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+
+  String _bannerFileName(HeroBanner banner) {
     final path = Uri.tryParse(banner.imageUrl)?.pathSegments;
     if (path != null && path.isNotEmpty && path.last.isNotEmpty) return path.last;
+    return banner.imageUrl;
+  }
+
+  String _bannerLabel(HeroBanner banner) {
+    if (banner.title?.trim().isNotEmpty == true) return banner.title!.trim();
+    final fileName = _bannerFileName(banner);
+    if (fileName.isNotEmpty) return fileName;
     return 'Banner ${banner.id}';
   }
 
@@ -154,6 +168,34 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     );
   }
 
+  Widget _bannerThumbnail(HeroBanner banner) {
+    Widget errorFallback() => Container(
+          width: 96,
+          height: 54,
+          color: AppTheme.backgroundLight,
+          alignment: Alignment.center,
+          child: const Icon(Icons.broken_image, color: AppTheme.textMuted),
+        );
+
+    if (_isRemoteImage(banner.imageUrl)) {
+      return Image.network(
+        banner.imageUrl,
+        width: 96,
+        height: 54,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => errorFallback(),
+      );
+    }
+
+    return Image.asset(
+      banner.imageUrl,
+      width: 96,
+      height: 54,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => errorFallback(),
+    );
+  }
+
   Future<void> _saveBannerOrder() async {
     setState(() => _savingOrder = true);
     final response = await http.post(
@@ -193,13 +235,35 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: _savingOrder || !_orderDirty ? null : _saveBannerOrder,
+                onPressed: _savingOrder || _banners.isEmpty || _bannerLoadError != null ? null : _saveBannerOrder,
                 icon: const Icon(Icons.save),
                 label: Text(_savingOrder ? 'Saving...' : 'Save Order'),
               ),
             ],
           ),
           const SizedBox(height: 12),
+          if (_bannerLoadError != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade100)),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_bannerLoadError!, style: const TextStyle(color: Colors.red))),
+                  TextButton(onPressed: _load, child: const Text('Retry')),
+                ],
+              ),
+            )
+          else if (_banners.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: AppTheme.backgroundLight, borderRadius: BorderRadius.circular(8)),
+              child: const Text('No hero banners found. The default hero images will appear here after the banner API initializes them.'),
+            )
+          else
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -224,19 +288,7 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
                       const SizedBox(width: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          banner.imageUrl,
-                          width: 96,
-                          height: 54,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: 96,
-                            height: 54,
-                            color: AppTheme.backgroundLight,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.broken_image, color: AppTheme.textMuted),
-                          ),
-                        ),
+                        child: _bannerThumbnail(banner),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -245,7 +297,9 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
                           children: [
                             Text(_bannerLabel(banner), style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 4),
-                            Text('Current sort_order: ${banner.sortOrder} • New position: ${index + 1}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted)),
+                            Text('File: ${_bannerFileName(banner)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted)),
+                            const SizedBox(height: 2),
+                            Text('Current order: ${index + 1}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted)),
                           ],
                         ),
                       ),
