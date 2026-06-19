@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\DeliveryOptionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\BankDetailController;
+use App\Http\Controllers\Api\UiSettingController;
+use App\Http\Controllers\Api\HeroBannerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +27,8 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::post('/orders/{id}/upload-slip', [OrderController::class, 'uploadSlip']);
 Route::get('/bank-details/active', [BankDetailController::class, 'active']);
 Route::get('/delivery-options', [DeliveryOptionController::class, 'index']);
+Route::get('/ui-settings', [UiSettingController::class, 'index']);
+Route::get('/hero-banners', [HeroBannerController::class, 'index']);
 
 // Public Auth Routes
 Route::get('/auth/check-email', [AuthController::class, 'checkEmail']);
@@ -64,6 +68,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
         Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
         Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+
+        // UI Settings (Admin)
+        Route::put('/ui-settings', [UiSettingController::class, 'update']);
+        Route::post('/hero-banners/order', [HeroBannerController::class, 'updateOrder']);
+        Route::apiResource('hero-banners', HeroBannerController::class)->except(['index', 'show']);
 
         // Bank Details (Admin)
         Route::apiResource('bank-details', BankDetailController::class)->except(['active']);

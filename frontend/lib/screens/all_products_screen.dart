@@ -108,7 +108,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: productGridDelegate(constraints.maxWidth),
+            gridDelegate: productGridDelegate(constraints.maxWidth, context: context),
             itemCount: _products.length,
             itemBuilder: (context, index) {
               final product = _products[index];

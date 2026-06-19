@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
 import '../theme/app_theme.dart';
 import '../utils/price_formatter.dart';
+import 'package:provider/provider.dart';
+import '../providers/ui_settings_provider.dart';
 
 class HoverProductCard extends StatefulWidget {
   final Product product;
@@ -23,6 +25,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final uiSettings = context.watch<UiSettingsProvider>().settings;
     final width = MediaQuery.of(context).size.width;
     final isCompactCard = width < 900;
     final badgeInset = isCompactCard ? 8.0 : 12.0;
@@ -188,7 +191,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                       Text(
                         widget.product.title,
                         style: titleStyle,
-                        maxLines: 1,
+                        maxLines: uiSettings.productNameOneLine ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
@@ -196,7 +199,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                         children: [
                           Flexible(
                             child: Text(
-                              formatPrice(widget.product.originalPrice),
+                              formatPrice(widget.product.originalPrice, currencySymbol: uiSettings.currencySymbol),
                               style: originalPriceStyle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -205,7 +208,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              formatPrice(widget.product.price),
+                              formatPrice(widget.product.price, currencySymbol: uiSettings.currencySymbol),
                               style: sellingPriceStyle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

@@ -10,6 +10,9 @@ import '../widgets/product_card.dart';
 import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
 import '../theme/app_theme.dart';
+import '../models/ui_settings.dart';
+import '../providers/ui_settings_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -178,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: productGridDelegate(constraints.maxWidth),
+            gridDelegate: productGridDelegate(constraints.maxWidth, context: context),
             itemCount: _products.length,
             itemBuilder: (context, index) {
               final product = _products[index];
@@ -341,8 +344,9 @@ class _ProductCarouselState extends State<_ProductCarousel> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final visibleItems = getProductCrossAxisCount(constraints.maxWidth);
-        final itemWidth = getProductCarouselItemWidth(constraints.maxWidth);
+        final uiSettings = context.watch<UiSettingsProvider>().settings;
+        final visibleItems = getProductCrossAxisCount(constraints.maxWidth, desktopCount: uiSettings.productsPerRowDesktop);
+        final itemWidth = getProductCarouselItemWidth(constraints.maxWidth, desktopCount: uiSettings.productsPerRowDesktop);
         final spacing = visibleItems == 2 ? 12.0 : 18.0;
         final scrollDistance =
             (itemWidth * visibleItems) + (spacing * visibleItems);
@@ -369,13 +373,13 @@ class _ProductCarouselState extends State<_ProductCarousel> {
                   );
                 },
               ),
-              if (_canScrollBack)
+              if (uiSettings.showCarouselArrows && _canScrollBack)
                 _CarouselArrowButton(
                   alignment: Alignment.centerLeft,
                   icon: Icons.chevron_left,
                   onPressed: () => _scrollBy(-scrollDistance),
                 ),
-              if (_canScrollForward)
+              if (uiSettings.showCarouselArrows && _canScrollForward)
                 _CarouselArrowButton(
                   alignment: Alignment.centerRight,
                   icon: Icons.chevron_right,
@@ -488,43 +492,48 @@ class _PromoBannerPlaceholder extends StatelessWidget {
 class _HeroAutoSlider extends StatefulWidget {
   const _HeroAutoSlider();
 
-  static const List<String> _bannerImages = [
-    'assets/images/hero/hero_01.png',
-    'assets/images/hero/hero_02.png',
-    'assets/images/hero/hero_03.png',
-    'assets/images/hero/hero_04.png',
-    'assets/images/hero/hero_05.png',
-    'assets/images/hero/hero_06.png',
-    'assets/images/hero/hero_07.png',
-    'assets/images/hero/hero_08.png',
-    'assets/images/hero/hero_09.png',
-    'assets/images/hero/hero_10.png',
-    'assets/images/hero/hero_11.png',
-    'assets/images/hero/hero_12.png',
-    'assets/images/hero/hero_13.png',
-    'assets/images/hero/hero_14.png',
-    'assets/images/hero/hero_15.png',
-  ];
-
   @override
   State<_HeroAutoSlider> createState() => _HeroAutoSliderState();
 }
 
 class _HeroAutoSliderState extends State<_HeroAutoSlider> {
   static const int _initialPage = 15000;
+  final List<HeroBanner> _banners = [];
   late final PageController _pageController;
   int _currentPage = 0;
   Timer? _timer;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _initialPage);
-    _currentPage = _initialPage % _HeroAutoSlider._bannerImages.length;
-    _startAutoSlide();
+    _fetchBanners();
+  }
+
+  Future<void> _fetchBanners() async {
+    try {
+      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/hero-banners?active=1'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List<dynamic>;
+        _banners
+          ..clear()
+          ..addAll(data.map((item) => HeroBanner.fromJson(item)));
+        if (_banners.isNotEmpty) {
+          _currentPage = _initialPage % _banners.length;
+          _startAutoSlide();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading hero banners: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _startAutoSlide() {
+    _timer?.cancel();
+    if (_banners.length < 2) return;
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_pageController.hasClients) {
         _pageController.nextPage(
@@ -547,6 +556,13 @@ class _HeroAutoSliderState extends State<_HeroAutoSlider> {
     final isMobile = MediaQuery.of(context).size.width < 800;
     final bannerHeight = isMobile ? 200.0 : 340.0;
 
+    if (_isLoading) {
+      return SizedBox(height: bannerHeight, child: const Center(child: CircularProgressIndicator()));
+    }
+    if (_banners.isEmpty) {
+      return SizedBox(height: bannerHeight, child: const _HeroPlaceholderBanner(imagePath: 'No active hero banners'));
+    }
+
     return SizedBox(
       width: double.infinity,
       height: bannerHeight,
@@ -554,23 +570,18 @@ class _HeroAutoSliderState extends State<_HeroAutoSlider> {
         children: [
           PageView.builder(
             controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index % _HeroAutoSlider._bannerImages.length;
-              });
-            },
+            onPageChanged: (index) => setState(() => _currentPage = index % _banners.length),
             itemBuilder: (context, index) {
-              final imagePath = _HeroAutoSlider
-                  ._bannerImages[index % _HeroAutoSlider._bannerImages.length];
-              return Image.asset(
-                imagePath,
+              final banner = _banners[index % _banners.length];
+              final image = CachedNetworkImage(
+                imageUrl: banner.imageUrl,
                 width: double.infinity,
                 height: bannerHeight,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _HeroPlaceholderBanner(imagePath: imagePath);
-                },
+                errorWidget: (context, url, error) => _HeroPlaceholderBanner(imagePath: banner.imageUrl),
               );
+              if (banner.linkUrl == null || banner.linkUrl!.isEmpty) return image;
+              return GestureDetector(onTap: () => context.go(banner.linkUrl!), child: image);
             },
           ),
           Positioned(
@@ -579,31 +590,20 @@ class _HeroAutoSliderState extends State<_HeroAutoSlider> {
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _HeroAutoSlider._bannerImages.length,
-                (index) {
-                  final isActive = _currentPage == index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: isActive ? 22 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppTheme.accentOrange
-                          : Colors.white.withAlpha(180),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              children: List.generate(_banners.length, (index) {
+                final isActive = _currentPage == index;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: isActive ? 22 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive ? AppTheme.accentOrange : Colors.white.withAlpha(180),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 1))],
+                  ),
+                );
+              }),
             ),
           ),
         ],
