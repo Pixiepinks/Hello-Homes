@@ -7,6 +7,7 @@ import 'dart:convert';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../widgets/product_card.dart';
+import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
 import '../theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -142,39 +143,16 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 800;
-          if (isMobile) {
-            return SizedBox(
-              height: 320,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: bestOffers.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 16),
-                itemBuilder: (context, index) {
-                  final product = bestOffers[index];
-                  return SizedBox(
-                    width: 248,
-                    child: HoverProductCard(
-                      product: product,
-                      onTap: () => context.go('/product/${product.id}'),
-                    ),
-                  );
-                },
-              ),
-            );
+          final isCompact = constraints.maxWidth < 600;
+          if (isCompact) {
+            return _ProductCarousel(products: bestOffers);
           }
 
-          final itemCount = bestOffers.length > 4 ? 4 : bestOffers.length;
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: constraints.maxWidth > 1200 ? 4 : 2,
-              childAspectRatio: 0.86,
-              crossAxisSpacing: 24,
-              mainAxisSpacing: 24,
-            ),
-            itemCount: itemCount,
+            gridDelegate: productGridDelegate(constraints.maxWidth),
+            itemCount: bestOffers.length,
             itemBuilder: (context, index) {
               final product = bestOffers[index];
               return HoverProductCard(
@@ -193,16 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth > 1200 ? 4 : (constraints.maxWidth > 800 ? 2 : 1);
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              childAspectRatio: 0.86,
-              crossAxisSpacing: 24,
-              mainAxisSpacing: 24,
-            ),
+            gridDelegate: productGridDelegate(constraints.maxWidth),
             itemCount: _products.length,
             itemBuilder: (context, index) {
               final product = _products[index];
@@ -295,6 +267,154 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _ProductCarousel extends StatefulWidget {
+  final List<Product> products;
+
+  const _ProductCarousel({required this.products});
+
+  @override
+  State<_ProductCarousel> createState() => _ProductCarouselState();
+}
+
+class _ProductCarouselState extends State<_ProductCarousel> {
+  final ScrollController _scrollController = ScrollController();
+  bool _canScrollBack = false;
+  bool _canScrollForward = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_updateArrowVisibility);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateArrowVisibility());
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProductCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateArrowVisibility());
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_updateArrowVisibility)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _updateArrowVisibility() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final canScrollBack = position.pixels > 4;
+    final canScrollForward = position.pixels < position.maxScrollExtent - 4;
+    if (canScrollBack != _canScrollBack || canScrollForward != _canScrollForward) {
+      setState(() {
+        _canScrollBack = canScrollBack;
+        _canScrollForward = canScrollForward;
+      });
+    }
+  }
+
+  void _scrollBy(double distance) {
+    if (!_scrollController.hasClients) return;
+    final target = (_scrollController.offset + distance).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = getProductCarouselItemWidth(constraints.maxWidth);
+        final spacing = constraints.maxWidth < 600 ? 12.0 : 18.0;
+        final scrollDistance = itemWidth + spacing;
+
+        return SizedBox(
+          height: constraints.maxWidth < 600 ? 280 : 320,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ListView.separated(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                itemCount: widget.products.length,
+                separatorBuilder: (context, index) => SizedBox(width: spacing),
+                itemBuilder: (context, index) {
+                  final product = widget.products[index];
+                  return SizedBox(
+                    width: itemWidth,
+                    child: HoverProductCard(
+                      product: product,
+                      onTap: () => context.go('/product/${product.id}'),
+                    ),
+                  );
+                },
+              ),
+              if (_canScrollBack)
+                _CarouselArrowButton(
+                  alignment: Alignment.centerLeft,
+                  icon: Icons.chevron_left,
+                  onPressed: () => _scrollBy(-scrollDistance),
+                ),
+              if (_canScrollForward)
+                _CarouselArrowButton(
+                  alignment: Alignment.centerRight,
+                  icon: Icons.chevron_right,
+                  onPressed: () => _scrollBy(scrollDistance),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CarouselArrowButton extends StatelessWidget {
+  final Alignment alignment;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _CarouselArrowButton({
+    required this.alignment,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: false,
+        child: Align(
+          alignment: alignment,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Material(
+              color: Colors.white,
+              elevation: 4,
+              borderRadius: BorderRadius.circular(4),
+              child: IconButton(
+                icon: Icon(icon, size: 34),
+                color: Colors.black87,
+                onPressed: onPressed,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'dart:convert';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../widgets/product_card.dart';
+import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
 import '../theme/app_theme.dart';
 
@@ -120,16 +121,10 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth > 1200 ? 4 : (constraints.maxWidth > 800 ? 2 : 1);
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              childAspectRatio: 0.86,
-              crossAxisSpacing: 24,
-              mainAxisSpacing: 24,
-            ),
+            gridDelegate: productGridDelegate(constraints.maxWidth),
             itemCount: _products.length,
             itemBuilder: (context, index) {
               final product = _products[index];

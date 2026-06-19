@@ -23,6 +23,35 @@ class _HoverProductCardState extends State<HoverProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isCompactCard = width < 900;
+    final badgeInset = isCompactCard ? 8.0 : 12.0;
+    final badgeHorizontalPadding = isCompactCard ? 6.0 : 8.0;
+    final badgeVerticalPadding = isCompactCard ? 3.0 : 4.0;
+    final detailsPadding = isCompactCard
+        ? const EdgeInsets.fromLTRB(10, 8, 10, 10)
+        : const EdgeInsets.fromLTRB(12, 10, 12, 12);
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: AppTheme.textMuted,
+          fontWeight: FontWeight.w600,
+          fontSize: isCompactCard ? 10 : null,
+          letterSpacing: isCompactCard ? 0.8 : 1.2,
+        );
+    final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: isCompactCard ? 13 : 14,
+        );
+    final originalPriceStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: AppTheme.textMuted,
+          decoration: TextDecoration.lineThrough,
+          fontSize: isCompactCard ? 11 : 13,
+        );
+    final sellingPriceStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
+          color: AppTheme.primaryBlue,
+          fontWeight: FontWeight.bold,
+          fontSize: isCompactCard ? 14 : 16,
+        );
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -79,33 +108,33 @@ class _HoverProductCardState extends State<HoverProductCard> {
                     ),
                     if (widget.product.isNew)
                       Positioned(
-                        top: 12,
-                        left: 12,
+                        top: badgeInset,
+                        left: badgeInset,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: badgeHorizontalPadding, vertical: badgeVerticalPadding),
                           decoration: BoxDecoration(
                             color: Colors.green,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'NEW ARRIVAL',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Colors.white, fontSize: isCompactCard ? 9 : 10, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
                     if (widget.product.isOnSale)
                       Positioned(
-                        top: 12,
-                        left: 12,
+                        top: badgeInset,
+                        left: badgeInset,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: badgeHorizontalPadding, vertical: badgeVerticalPadding),
                           decoration: BoxDecoration(
                             color: AppTheme.accentOrange,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'SALE',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Colors.white, fontSize: isCompactCard ? 9 : 10, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -144,27 +173,21 @@ class _HoverProductCardState extends State<HoverProductCard> {
               Expanded(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  padding: detailsPadding,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         widget.product.subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textMuted,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.2,
-                            ),
+                        style: subtitleStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         widget.product.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style: titleStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -174,10 +197,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                           Flexible(
                             child: Text(
                               formatPrice(widget.product.originalPrice),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textMuted,
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
+                              style: originalPriceStyle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -186,10 +206,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                           Flexible(
                             child: Text(
                               formatPrice(widget.product.price),
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: AppTheme.primaryBlue,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: sellingPriceStyle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
