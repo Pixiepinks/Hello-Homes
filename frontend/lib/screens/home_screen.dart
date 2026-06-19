@@ -85,6 +85,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 30),
                   _buildBestOffersSection(context),
+                  if (_newArrivalProducts.isNotEmpty) ...[
+                    const SizedBox(height: 60),
+                    _buildSectionTitle(
+                      context,
+                      'New Arrivals',
+                      'Fresh picks just added to Hello Homes',
+                    ),
+                    const SizedBox(height: 30),
+                    _buildHorizontalProductSlider(context, _newArrivalProducts),
+                  ],
                   const SizedBox(height: 60),
                   _buildSectionTitle(
                     context,
@@ -96,11 +106,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 60),
                   _buildSectionTitle(
                     context,
-                    'Trending Now',
+                    'Featured Products',
                     'Most popular items this week',
                   ),
                   const SizedBox(height: 30),
-                  _buildProductGrid(context),
+                  _buildHorizontalProductSlider(context, _products),
                   const SizedBox(height: 80),
                   const GlobalFooter(),
                 ],
@@ -133,36 +143,30 @@ class _HomeScreenState extends State<HomeScreen> {
     return offers.take(8).toList();
   }
 
+  List<Product> get _newArrivalProducts {
+    return _products.where((product) => product.isNew).take(12).toList();
+  }
+
   Widget _buildBestOffersSection(BuildContext context) {
     final bestOffers = _bestOfferProducts;
     if (bestOffers.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    return _buildHorizontalProductSlider(context, bestOffers);
+  }
+
+  Widget _buildHorizontalProductSlider(
+    BuildContext context,
+    List<Product> products,
+  ) {
+    if (products.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 600;
-          if (isCompact) {
-            return _ProductCarousel(products: bestOffers);
-          }
-
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: productGridDelegate(constraints.maxWidth),
-            itemCount: bestOffers.length,
-            itemBuilder: (context, index) {
-              final product = bestOffers[index];
-              return HoverProductCard(
-                product: product,
-                onTap: () => context.go('/product/${product.id}'),
-              );
-            },
-          );
-        },
-      ),
+      child: _ProductCarousel(products: products),
     );
   }
 
@@ -337,9 +341,11 @@ class _ProductCarouselState extends State<_ProductCarousel> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final visibleItems = getProductCrossAxisCount(constraints.maxWidth);
         final itemWidth = getProductCarouselItemWidth(constraints.maxWidth);
-        final spacing = constraints.maxWidth < 600 ? 12.0 : 18.0;
-        final scrollDistance = itemWidth + spacing;
+        final spacing = visibleItems == 2 ? 12.0 : 18.0;
+        final scrollDistance =
+            (itemWidth * visibleItems) + (spacing * visibleItems);
 
         return SizedBox(
           height: constraints.maxWidth < 600 ? 280 : 320,
@@ -405,12 +411,22 @@ class _CarouselArrowButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Material(
               color: Colors.white,
-              elevation: 4,
-              borderRadius: BorderRadius.circular(4),
-              child: IconButton(
-                icon: Icon(icon, size: 34),
-                color: Colors.black87,
-                onPressed: onPressed,
+              elevation: 8,
+              shadowColor: Colors.black.withAlpha(31),
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                onTap: onPressed,
+                customBorder: const CircleBorder(),
+                hoverColor: AppTheme.primaryBlue.withAlpha(20),
+                child: SizedBox(
+                  width: 46,
+                  height: 46,
+                  child: Icon(
+                    icon,
+                    size: 30,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
               ),
             ),
           ),
