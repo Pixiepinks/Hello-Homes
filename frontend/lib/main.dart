@@ -12,6 +12,7 @@ import 'models/product.dart';
 import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/ui_settings_provider.dart';
 import 'screens/user_dashboard_screen.dart';
 import 'screens/category_products_screen.dart';
 import 'screens/all_categories_screen.dart';
@@ -136,6 +137,7 @@ class _HelloHomesAppState extends State<HelloHomesApp> {
       providers: [
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => UiSettingsProvider()),
         ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
           create: (context) => NotificationProvider(context.read<AuthProvider>()),
           update: (context, auth, previous) => previous ?? NotificationProvider(auth),

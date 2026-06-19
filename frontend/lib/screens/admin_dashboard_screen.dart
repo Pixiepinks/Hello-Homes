@@ -13,6 +13,7 @@ import 'admin_customers_view.dart';
 import 'admin_orders_view.dart';
 import 'admin_settings_view.dart';
 import 'admin_bank_details_view.dart';
+import 'admin_ui_settings_view.dart';
 import '../widgets/notification_bell.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -95,6 +96,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           return const AdminSettingsView();
         case 6:
           return const AdminBankDetailsView();
+        case 7:
+          return const AdminUiSettingsView();
         case 0:
         default:
           return Column(
@@ -203,6 +206,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                  _buildSidebarItem(Icons.people, 'Customers', 4),
                 _buildSidebarItem(Icons.settings, 'Settings', 5),
                 _buildSidebarItem(Icons.account_balance, 'Bank Details', 6),
+                _buildSidebarItem(Icons.tune, 'UI Settings', 7),
               ],
             ),
           ),

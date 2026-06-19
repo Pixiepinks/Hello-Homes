@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../utils/price_formatter.dart';
 import '../widgets/global_layout.dart';
 import '../providers/cart_provider.dart';
+import '../providers/ui_settings_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'checkout_screen.dart';
 
@@ -207,10 +208,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(formatPrice(widget.product.price), style: (isMobile ? Theme.of(context).textTheme.headlineMedium : Theme.of(context).textTheme.displaySmall)?.copyWith(color: AppTheme.primaryBlue)),
+                      Text(formatPrice(widget.product.price, currencySymbol: context.watch<UiSettingsProvider>().settings.currencySymbol), style: (isMobile ? Theme.of(context).textTheme.headlineMedium : Theme.of(context).textTheme.displaySmall)?.copyWith(color: AppTheme.primaryBlue)),
                       const SizedBox(width: 12),
                       if (widget.product.price < widget.product.originalPrice)
-                        Text(formatPrice(widget.product.originalPrice), style: Theme.of(context).textTheme.titleLarge?.copyWith(decoration: TextDecoration.lineThrough, color: AppTheme.textMuted)),
+                        Text(formatPrice(widget.product.originalPrice, currencySymbol: context.watch<UiSettingsProvider>().settings.currencySymbol), style: Theme.of(context).textTheme.titleLarge?.copyWith(decoration: TextDecoration.lineThrough, color: AppTheme.textMuted)),
                     ],
                   ),
                   const SizedBox(height: 8),
