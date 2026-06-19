@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import '../utils/price_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -191,12 +192,12 @@ class _ProductSearchBarState extends State<ProductSearchBar> {
                               subtitle: Row(
                                 children: [
                                   Text(
-                                    '\$${product['original_price'] ?? product['price']}',
+                                    formatDynamicPrice(product['original_price'] ?? product['price']),
                                     style: const TextStyle(color: AppTheme.textMuted, decoration: TextDecoration.lineThrough),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    '\$${product['price']}',
+                                    formatDynamicPrice(product['price']),
                                     style: const TextStyle(color: AppTheme.accentOrange, fontWeight: FontWeight.bold),
                                   ),
                                 ],

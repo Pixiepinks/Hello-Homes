@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../theme/app_theme.dart';
+import '../utils/price_formatter.dart';
 import '../widgets/global_layout.dart';
 import '../providers/cart_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -206,14 +207,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('\$${widget.product.price.toStringAsFixed(2)}', style: (isMobile ? Theme.of(context).textTheme.headlineMedium : Theme.of(context).textTheme.displaySmall)?.copyWith(color: AppTheme.primaryBlue)),
+                      Text(formatPrice(widget.product.price), style: (isMobile ? Theme.of(context).textTheme.headlineMedium : Theme.of(context).textTheme.displaySmall)?.copyWith(color: AppTheme.primaryBlue)),
                       const SizedBox(width: 12),
                       if (widget.product.price < widget.product.originalPrice)
-                        Text('\$${widget.product.originalPrice.toStringAsFixed(2)}', style: Theme.of(context).textTheme.titleLarge?.copyWith(decoration: TextDecoration.lineThrough, color: AppTheme.textMuted)),
+                        Text(formatPrice(widget.product.originalPrice), style: Theme.of(context).textTheme.titleLarge?.copyWith(decoration: TextDecoration.lineThrough, color: AppTheme.textMuted)),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('Or from \$299.99/mo. with 12 months special financing.', style: TextStyle(color: AppTheme.textMuted)),
+                  Text(widget.product.easyPayment.isNotEmpty ? widget.product.easyPayment : 'Easy payment options available.', style: const TextStyle(color: AppTheme.textMuted)),
                 ],
               ),
             ),

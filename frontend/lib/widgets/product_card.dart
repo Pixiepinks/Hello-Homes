@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
 import '../theme/app_theme.dart';
+import '../utils/price_formatter.dart';
 
 class HoverProductCard extends StatefulWidget {
   final Product product;
@@ -172,7 +173,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                         children: [
                           Flexible(
                             child: Text(
-                              '\$${widget.product.originalPrice.toStringAsFixed(0)}',
+                              formatPrice(widget.product.originalPrice),
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: AppTheme.textMuted,
                                     decoration: TextDecoration.lineThrough,
@@ -184,7 +185,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              '\$${widget.product.price.toStringAsFixed(0)}',
+                              formatPrice(widget.product.price),
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                     color: AppTheme.primaryBlue,
                                     fontWeight: FontWeight.bold,

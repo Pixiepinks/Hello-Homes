@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import '../utils/price_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -188,7 +189,7 @@ class _AdminSettingsViewState extends State<AdminSettingsView> {
                 final opt = _deliveryOptions[index];
                 return ListTile(
                   title: Text(opt['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Type: ${opt['type']} | Base: Rs.${opt['base_fee']}'),
+                  subtitle: Text('Type: ${opt['type']} | Base: ${formatDynamicPrice(opt['base_fee'])}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

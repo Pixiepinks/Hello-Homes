@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import '../utils/price_formatter.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -659,7 +660,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Rs.${product.price.toStringAsFixed(2)}'),
+                                  Text(formatPrice(product.price)),
                                   if (product.categoryName.isNotEmpty)
                                     Text(product.categoryName, style: TextStyle(color: AppTheme.primaryBlue.withOpacity(0.7), fontSize: 12)),
                                 ],
@@ -973,7 +974,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 items: _deliveryOptions.map((opt) {
                   return DropdownMenuItem<int>(
                     value: opt['id'],
-                    child: Text('${opt['name']} (Rs. ${opt['base_fee']})'),
+                    child: Text('${opt['name']} (${formatDynamicPrice(opt['base_fee'])})'),
                   );
                 }).toList(),
                 onChanged: (v) => setState(() => _selectedDeliveryOptionId = v),

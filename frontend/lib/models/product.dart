@@ -116,7 +116,7 @@ final List<Product> dummyProducts = [
       'Camera': '50MP + 12MP + 10MP',
       'Battery': '4400 mAh',
     },
-    easyPayment: 'Pay in 12 monthly installments of \$108.25 with 0% interest using selected credit cards.',
+    easyPayment: 'Pay in 12 monthly installments with 0% interest using selected credit cards.',
     enquiry: 'For bulk orders and corporate enquiries, please contact our B2B sales team at sales@hellohomes.com or call 1-800-555-0199.',
   ),
   Product(

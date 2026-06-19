@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../theme/app_theme.dart';
+import '../utils/price_formatter.dart';
 import '../providers/auth_provider.dart';
 import 'admin_products_view.dart';
 import 'admin_categories_view.dart';
@@ -104,7 +105,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   isMobile 
                     ? Column(
                         children: [
-                          _buildStatCard(context, 'Total Sales', '\$${_totalSales.toStringAsFixed(2)}', Icons.attach_money, AppTheme.primaryBlue),
+                          _buildStatCard(context, 'Total Sales', formatPrice(_totalSales), Icons.attach_money, AppTheme.primaryBlue),
                           const SizedBox(height: 16),
                           _buildStatCard(context, 'Active Orders', '$_activeOrders', Icons.receipt, AppTheme.accentOrange),
                           const SizedBox(height: 16),
@@ -113,7 +114,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       )
                     : Row(
                         children: [
-                          Expanded(child: _buildStatCard(context, 'Total Sales', '\$${_totalSales.toStringAsFixed(2)}', Icons.attach_money, AppTheme.primaryBlue)),
+                          Expanded(child: _buildStatCard(context, 'Total Sales', formatPrice(_totalSales), Icons.attach_money, AppTheme.primaryBlue)),
                           const SizedBox(width: 24),
                           Expanded(child: _buildStatCard(context, 'Active Orders', '$_activeOrders', Icons.receipt, AppTheme.accentOrange)),
                           const SizedBox(width: 24),
