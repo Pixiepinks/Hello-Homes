@@ -1,10 +1,12 @@
 import '../utils/constants.dart';
+import '../utils/supabase_storage_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../theme/app_theme.dart';
 import '../models/category.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
 
 class AdminCategoriesView extends StatefulWidget {
@@ -26,6 +28,9 @@ class _AdminCategoriesViewState extends State<AdminCategoriesView> {
   final _imageUrlController = TextEditingController();
 
   bool _isSubmitting = false;
+  bool _isUploadingImage = false;
+  final ImagePicker _imagePicker = ImagePicker();
+  final SupabaseStorageUploadService _uploadService = SupabaseStorageUploadService();
 
   @override
   void initState() {
@@ -55,6 +60,36 @@ class _AdminCategoriesViewState extends State<AdminCategoriesView> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading categories: $e')));
       }
+    }
+  }
+
+  void _showUploadMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _pickAndUploadCategoryImage() async {
+    setState(() => _isUploadingImage = true);
+    try {
+      final file = await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (file == null) return;
+
+      final url = await _uploadService.uploadImage(
+        file: file,
+        bucket: AppConstants.supabaseCategoryBucket,
+        folder: 'categories',
+      );
+      if (url == null) {
+        _showUploadMessage('Image upload is not configured. Please configure Supabase storage.');
+        return;
+      }
+
+      setState(() => _imageUrlController.text = url);
+      _showUploadMessage('Category image uploaded.');
+    } catch (e) {
+      _showUploadMessage('Image upload failed: $e');
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
     }
   }
 
@@ -265,6 +300,102 @@ class _AdminCategoriesViewState extends State<AdminCategoriesView> {
     );
   }
 
+  Widget _buildImagePreview(String url) {
+    return Container(
+      width: 160,
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderLight),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: url.trim().isEmpty
+          ? const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.image_outlined, color: Colors.grey, size: 36),
+                SizedBox(height: 8),
+                Text('Image preview', style: TextStyle(color: Colors.grey)),
+              ],
+            )
+          : Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, color: Colors.grey),
+            ),
+    );
+  }
+
+  Widget _buildSupabaseConfigurationNotice() {
+    final urlConfigured = AppConstants.supabaseUrl.isNotEmpty;
+    final anonKeyConfigured = AppConstants.supabaseAnonKey.isNotEmpty;
+    final isConfigured = AppConstants.isSupabaseStorageConfigured;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isConfigured ? Colors.green.shade50 : Colors.amber.shade50,
+        border: Border.all(color: isConfigured ? Colors.green.shade200 : Colors.amber.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isConfigured) ...[
+            const Text(
+              'Image upload is not configured. Configure Supabase before uploading category images.',
+              style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const Text('Supabase upload configuration', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('Supabase URL configured: ${urlConfigured ? 'yes' : 'no'}'),
+          Text('Anon key configured: ${anonKeyConfigured ? 'yes' : 'no'}'),
+          Text('Bucket name: ${AppConstants.supabaseCategoryBucket}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryImageUploader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSupabaseConfigurationNotice(),
+        const Text('Category image', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _imageUrlController,
+              builder: (_, value, __) => _buildImagePreview(value.text),
+            ),
+            ElevatedButton.icon(
+              onPressed: _isUploadingImage ? null : _pickAndUploadCategoryImage,
+              icon: _isUploadingImage
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.cloud_upload_outlined),
+              label: Text(_isUploadingImage ? 'Uploading...' : 'Upload Category Image'),
+            ),
+          ],
+        ),
+        if (_isUploadingImage) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(),
+        ],
+        const SizedBox(height: 8),
+        const Text('Accepted formats: JPG, JPEG, PNG, WEBP. Maximum size: 5MB.', style: TextStyle(color: AppTheme.textMuted)),
+      ],
+    );
+  }
+
   Widget _buildAddCategoryForm() {
     return SingleChildScrollView(
       child: Container(
@@ -301,10 +432,7 @@ class _AdminCategoriesViewState extends State<AdminCategoriesView> {
                 decoration: const InputDecoration(labelText: 'Subtitle'),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(labelText: 'Image URL'),
-              ),
+              _buildCategoryImageUploader(),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
