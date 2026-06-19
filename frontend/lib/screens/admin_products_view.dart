@@ -1,6 +1,6 @@
 import '../utils/constants.dart';
 import '../utils/price_formatter.dart';
-import 'dart:typed_data';
+import '../utils/supabase_storage_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -44,8 +44,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   bool _isUploadingMainImage = false;
   bool _isUploadingAdditionalImages = false;
   final ImagePicker _imagePicker = ImagePicker();
-  static const int _maxImageBytes = 5 * 1024 * 1024;
-  static const Set<String> _allowedImageExtensions = {'jpg', 'jpeg', 'png', 'webp'};
+  final SupabaseStorageUploadService _uploadService = SupabaseStorageUploadService();
   
   // Search and Filter State
   final _searchController = TextEditingController();
@@ -298,34 +297,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     return slug.isEmpty ? 'temp-product' : slug;
   }
 
-  String _safeFileName(String name) {
-    final cleaned = name
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9._-]+'), '-')
-        .replaceAll(RegExp(r'-+'), '-');
-    return cleaned.isEmpty ? 'product-image.jpg' : cleaned;
-  }
-
-  String _fileExtension(String name) {
-    final parts = name.toLowerCase().split('.');
-    return parts.length > 1 ? parts.last : '';
-  }
-
-  String _contentTypeForExtension(String extension) {
-    switch (extension) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      default:
-        return 'application/octet-stream';
-    }
-  }
-
   void _showUploadMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -337,40 +308,11 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       return null;
     }
 
-    final extension = _fileExtension(file.name);
-    if (!_allowedImageExtensions.contains(extension)) {
-      _showUploadMessage('Only JPG, JPEG, PNG, and WEBP images are allowed.');
-      return null;
-    }
-
-    final Uint8List bytes = await file.readAsBytes();
-    if (bytes.length > _maxImageBytes) {
-      _showUploadMessage('Each image must be 5MB or smaller.');
-      return null;
-    }
-
-    final path = 'products/${_productUploadFolder()}/${DateTime.now().millisecondsSinceEpoch}-${_safeFileName(file.name)}';
-    final encodedPath = path.split('/').map(Uri.encodeComponent).join('/');
-    final uploadUrl = Uri.parse(
-      '${AppConstants.supabaseUrl}/storage/v1/object/${AppConstants.supabaseProductBucket}/$encodedPath',
+    return _uploadService.uploadImage(
+      file: file,
+      bucket: AppConstants.supabaseProductBucket,
+      folder: 'products/${_productUploadFolder()}',
     );
-
-    final response = await http.post(
-      uploadUrl,
-      headers: {
-        'apikey': AppConstants.supabaseAnonKey,
-        'Authorization': 'Bearer ${AppConstants.supabaseAnonKey}',
-        'Content-Type': _contentTypeForExtension(extension),
-        'x-upsert': 'false',
-      },
-      body: bytes,
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Supabase upload failed (${response.statusCode}): ${response.body}');
-    }
-
-    return '${AppConstants.supabaseUrl}/storage/v1/object/public/${AppConstants.supabaseProductBucket}/$encodedPath';
   }
 
   Future<void> _pickAndUploadMainImage() async {
