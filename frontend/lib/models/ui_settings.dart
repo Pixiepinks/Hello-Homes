@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class UiSettings {
   final bool productNameOneLine;
   final int productsPerRowDesktop;
@@ -101,11 +103,22 @@ class PromotionBanner {
   });
 
   bool get isCurrentlyActive {
-    final now = DateTime.now();
-    if (!isActive) return false;
-    if (offerStartAt != null && offerStartAt!.isAfter(now)) return false;
-    if (offerEndAt != null && !offerEndAt!.isAfter(now)) return false;
-    return true;
+    final now = DateTime.now().toUtc();
+    final startAt = offerStartAt?.toUtc();
+    final endAt = offerEndAt?.toUtc();
+    final computedIsActive = isActive &&
+        (startAt == null || !now.isBefore(startAt)) &&
+        (endAt == null || now.isBefore(endAt));
+
+    debugPrint(
+      'PromotionBanner.isCurrentlyActive id=$id '
+      'now_utc=${now.toIso8601String()} '
+      'offer_start_at_utc=${startAt?.toIso8601String()} '
+      'offer_end_at_utc=${endAt?.toIso8601String()} '
+      'enabled=$isActive computed_isActive=$computedIsActive',
+    );
+
+    return computedIsActive;
   }
 
   Map<String, dynamic> toJson() => {
@@ -119,8 +132,8 @@ class PromotionBanner {
         'discount_percentage': discountPercentage,
         'original_price': originalPrice,
         'discounted_price': discountedPrice,
-        'offer_start_at': offerStartAt?.toIso8601String(),
-        'offer_end_at': offerEndAt?.toIso8601String(),
+        'offer_start_at': offerStartAt?.toUtc().toIso8601String(),
+        'offer_end_at': offerEndAt?.toUtc().toIso8601String(),
       };
 
   factory PromotionBanner.fromJson(Map<String, dynamic> json) => PromotionBanner(
