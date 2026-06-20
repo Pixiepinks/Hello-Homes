@@ -26,6 +26,10 @@ class AppConstants {
     'SUPABASE_CATEGORY_BUCKET',
     defaultValue: 'category-images',
   );
+  static const String _configuredSupabasePaymentSlipBucket = String.fromEnvironment(
+    'SUPABASE_PAYMENT_SLIP_BUCKET',
+    defaultValue: 'payment-slips',
+  );
 
   static String get supabaseUrl => _configuredSupabaseUrl.trim().replaceFirst(RegExp(r'/$'), '');
   static String get supabaseAnonKey => _configuredSupabaseAnonKey.trim();
@@ -35,6 +39,9 @@ class AppConstants {
   static String get supabaseCategoryBucket => _configuredSupabaseCategoryBucket.trim().isEmpty
       ? 'category-images'
       : _configuredSupabaseCategoryBucket.trim();
+  static String get supabasePaymentSlipBucket => _configuredSupabasePaymentSlipBucket.trim().isEmpty
+      ? 'payment-slips'
+      : _configuredSupabasePaymentSlipBucket.trim();
   static bool get isSupabaseStorageConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 }

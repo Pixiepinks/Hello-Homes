@@ -106,6 +106,34 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
     }
   }
 
+
+  Future<void> _updatePaymentStatus(int id, String paymentStatus) async {
+    try {
+      final token = context.read<AuthProvider>().token;
+      final response = await http.put(
+        Uri.parse('${AppConstants.apiUrl}/orders/$id/payment-status'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'payment_status': paymentStatus}),
+      );
+      if (response.statusCode == 200) {
+        Navigator.pop(context);
+        _fetchOrders(page: _currentPage);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment status updated to $paymentStatus')));
+      }
+    } catch (e) {
+      debugPrint('Error updating payment status: $e');
+    }
+  }
+
+  String _slipUrl(Map<String, dynamic> order) {
+    final value = (order['payment_slip_url'] ?? order['payment_slip_path'])?.toString() ?? '';
+    if (value.startsWith('http')) return value;
+    return '${AppConstants.baseUrl}$value';
+  }
+
   void _showOrderDetails(Map<String, dynamic> order) {
     final isMobile = MediaQuery.of(context).size.width < 600;
     showDialog(
@@ -170,7 +198,11 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                     Text(formatDynamicPrice(order['total_amount']), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
                   ],
                 ),
-                if (order['payment_slip_path'] != null) ...[
+                const Divider(height: 32),
+                _buildInfoColumn('Payment Method', _paymentMethodLabel(order['payment_method'])),
+                const SizedBox(height: 8),
+                _buildInfoColumn('Payment Status', order['payment_status'] ?? 'PENDING_PAYMENT'),
+                if ((order['payment_slip_url'] ?? order['payment_slip_path']) != null) ...[
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -182,7 +214,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                               builder: (context) => AlertDialog(
                                 title: const Text('Payment Slip'),
                                 content: Image.network(
-                                  '${AppConstants.baseUrl}${order['payment_slip_path']}',
+                                  _slipUrl(order),
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return const Center(child: CircularProgressIndicator());
@@ -221,7 +253,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final url = Uri.parse('${AppConstants.baseUrl}${order['payment_slip_path']}');
+                            final url = Uri.parse(_slipUrl(order));
                             if (await canLaunchUrl(url)) {
                               await launchUrl(url, mode: LaunchMode.externalApplication);
                             }
@@ -236,6 +268,28 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _updatePaymentStatus(order['id'], 'VERIFIED'),
+                          icon: const Icon(Icons.verified),
+                          label: const Text('Verify Payment'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 8)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _updatePaymentStatus(order['id'], 'REJECTED'),
+                          icon: const Icon(Icons.cancel),
+                          label: const Text('Reject Payment'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
@@ -342,6 +396,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                             items: const [
                               DropdownMenuItem(value: 'all', child: Text('All Status')),
                               DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                              DropdownMenuItem(value: 'PENDING_PAYMENT', child: Text('Pending Payment')),
                               DropdownMenuItem(value: 'confirmed', child: Text('Confirmed')),
                               DropdownMenuItem(value: 'delivered', child: Text('Delivered')),
                               DropdownMenuItem(value: 'refunded', child: Text('Refunded')),
@@ -368,7 +423,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                             value: _paymentMethodFilter,
                             items: const [
                               DropdownMenuItem(value: 'all', child: Text('All Payments')),
-                              DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                              DropdownMenuItem(value: 'transfer', child: Text('Bank Transfer')),
                               DropdownMenuItem(value: 'Card', child: Text('Card')),
                               DropdownMenuItem(value: 'Cash on Delivery', child: Text('COD')),
                             ],
@@ -432,6 +487,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                       items: const [
                         DropdownMenuItem(value: 'all', child: Text('All Status')),
                         DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                        DropdownMenuItem(value: 'PENDING_PAYMENT', child: Text('Pending Payment')),
                         DropdownMenuItem(value: 'confirmed', child: Text('Confirmed')),
                         DropdownMenuItem(value: 'delivered', child: Text('Delivered')),
                         DropdownMenuItem(value: 'refunded', child: Text('Refunded')),
@@ -455,7 +511,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                       value: _paymentMethodFilter,
                       items: const [
                         DropdownMenuItem(value: 'all', child: Text('All Payments')),
-                        DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                        DropdownMenuItem(value: 'transfer', child: Text('Bank Transfer')),
                         DropdownMenuItem(value: 'Card', child: Text('Card')),
                         DropdownMenuItem(value: 'Cash on Delivery', child: Text('COD')),
                       ],
@@ -529,7 +585,7 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                                 )),
                                 DataCell(Text(formatDynamicPrice(order['total_amount']))),
                                 DataCell(Text(order['created_at'].toString().split('T').first)),
-                                DataCell(Text(order['payment_method'] ?? 'N/A')),
+                                DataCell(Text(_paymentMethodLabel(order['payment_method']))),
                                 DataCell(
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -598,11 +654,21 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
     );
   }
 
+  String _paymentMethodLabel(dynamic method) {
+    switch (method?.toString()) {
+      case 'transfer': return 'Bank Transfer';
+      case 'card': return 'Card Payment';
+      case 'qr': return 'QR Payment';
+      default: return method?.toString() ?? 'N/A';
+    }
+  }
+
   Color _getStatusColor(String status) {
     switch (status) {
       case 'confirmed': return Colors.blue;
       case 'delivered': return Colors.green;
       case 'refunded': return Colors.red;
+      case 'PENDING_PAYMENT': return Colors.deepOrange;
       case 'pending': 
       default: return Colors.orange;
     }

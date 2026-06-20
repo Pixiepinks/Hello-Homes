@@ -27,6 +27,7 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
+Route::get('/orders/{id}', [OrderController::class, 'show'])->whereNumber('id');
 Route::post('/orders/{id}/upload-slip', [OrderController::class, 'uploadSlip']);
 Route::get('/bank-details/active', [BankDetailController::class, 'active']);
 Route::get('/payment-settings', [PaymentSettingController::class, 'show']);
@@ -61,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/dashboard/stats', [OrderController::class, 'stats']);
         Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+        Route::put('/orders/{id}/payment-status', [OrderController::class, 'updatePaymentStatus']);
         Route::delete('/orders/{id}/slip', [OrderController::class, 'deleteSlip']);
 
         // Delivery Options

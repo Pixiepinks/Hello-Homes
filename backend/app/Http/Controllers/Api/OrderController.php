@@ -77,6 +77,10 @@ class OrderController extends Controller
         unset($orderData['items']);
         unset($orderData['password']);
         $orderData['user_id'] = $user->id;
+        if ($validated['payment_method'] === 'transfer') {
+            $orderData['status'] = 'PENDING_PAYMENT';
+            $orderData['payment_status'] = 'PENDING_PAYMENT';
+        }
 
         $order = Order::create($orderData);
 
@@ -120,6 +124,11 @@ class OrderController extends Controller
             'token' => $token,
             'user' => $user
         ]);
+    }
+
+    public function show($id)
+    {
+        return response()->json(Order::with('items')->findOrFail($id));
     }
 
     public function stats()
@@ -171,7 +180,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,confirmed,refunded,delivered',
+            'status' => 'required|in:pending,PENDING_PAYMENT,confirmed,refunded,delivered',
         ]);
 
         $order = Order::findOrFail($id);
@@ -207,40 +216,53 @@ class OrderController extends Controller
 
     public function uploadSlip(Request $request, $id)
     {
-        $request->validate([
-            'slip' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        $validated = $request->validate([
+            'payment_slip_url' => 'required|string|max:2048',
         ]);
 
         $order = Order::findOrFail($id);
+        $order->payment_slip_url = $validated['payment_slip_url'];
+        $order->payment_slip_path = $validated['payment_slip_url'];
+        $order->payment_status = 'PENDING_VERIFICATION';
+        $order->payment_slip_uploaded_at = now();
+        $order->save();
 
-        if ($request->hasFile('slip')) {
-            $file = $request->file('slip');
-            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $extension = $file->getClientOriginalExtension();
-            $safeName = \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
-            $filename = time() . '_' . $safeName;
-            $path = $file->storeAs('public/slips', $filename);
-            
-            $order->payment_slip_path = '/storage/slips/' . $filename;
-            $order->save();
-
-            // Notify Admins
-            $adminEmails = array_map('trim', explode(',', env('ADMIN_EMAILS', '')));
-            $admins = User::whereIn('email', $adminEmails)->get();
-            foreach ($admins as $admin) {
-                Notification::create([
-                    'user_id' => $admin->id,
-                    'title' => 'Payment Slip Uploaded',
-                    'message' => "A payment slip has been uploaded for order #{$order->id}.",
-                    'type' => 'order',
-                    'reference_id' => $order->id,
-                ]);
-            }
-
-            return response()->json(['message' => 'Slip uploaded successfully', 'path' => $order->payment_slip_path]);
+        // Notify Admins
+        $adminEmails = array_map('trim', explode(',', env('ADMIN_EMAILS', '')));
+        $admins = User::whereIn('email', $adminEmails)->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'title' => 'Payment Slip Uploaded',
+                'message' => "A payment slip has been uploaded for order #{$order->id}.",
+                'type' => 'order',
+                'reference_id' => $order->id,
+            ]);
         }
 
-        return response()->json(['message' => 'No file uploaded'], 400);
+        return response()->json([
+            'message' => 'Payment slip submitted. Your order is pending verification.',
+            'payment_slip_url' => $order->payment_slip_url,
+            'order' => $order,
+        ]);
+    }
+
+    public function updatePaymentStatus(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'payment_status' => 'required|in:PENDING_PAYMENT,PENDING_VERIFICATION,VERIFIED,REJECTED',
+        ]);
+
+        $order = Order::findOrFail($id);
+        $order->payment_status = $validated['payment_status'];
+        if ($validated['payment_status'] === 'VERIFIED') {
+            $order->status = 'confirmed';
+        } elseif ($validated['payment_status'] === 'REJECTED') {
+            $order->status = 'PENDING_PAYMENT';
+        }
+        $order->save();
+
+        return response()->json(['message' => 'Payment status updated successfully', 'order' => $order]);
     }
 
     public function deleteSlip(Request $request, $id)
@@ -251,6 +273,9 @@ class OrderController extends Controller
             $filePath = str_replace('/storage/', 'public/', $order->payment_slip_path);
             \Illuminate\Support\Facades\Storage::delete($filePath);
             $order->payment_slip_path = null;
+            $order->payment_slip_url = null;
+            $order->payment_status = 'PENDING_PAYMENT';
+            $order->payment_slip_uploaded_at = null;
             $order->save();
         }
 
