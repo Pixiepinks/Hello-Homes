@@ -94,12 +94,12 @@ class _HoverProductCardState extends State<HoverProductCard> {
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
                       child: Container(
-                        color: AppTheme.backgroundLight,
+                        color: Colors.white,
                         padding: EdgeInsets.all(imagePadding),
                         child: CachedNetworkImage(
                           imageUrl: widget.product.imageUrl,
                           fit: BoxFit.contain,
-                          placeholder: (context, url) => Container(color: AppTheme.backgroundLight),
+                          placeholder: (context, url) => Container(color: Colors.white),
                           errorWidget: (context, url, error) => const Icon(Icons.error),
                         ),
                       ),
