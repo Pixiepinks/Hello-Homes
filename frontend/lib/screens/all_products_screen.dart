@@ -90,11 +90,6 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
             'Explore All Products',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Discover quality items across all our departments',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.textMuted),
-          ),
         ],
       ),
     );

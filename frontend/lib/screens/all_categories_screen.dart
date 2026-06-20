@@ -77,11 +77,6 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
             'All Categories',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Explore our collections and find what you need',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.textMuted),
-          ),
         ],
       ),
     );
@@ -168,8 +163,6 @@ class _FullCategoryCardState extends State<_FullCategoryCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(widget.category.title, style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Text(widget.category.subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted)),
                     const Spacer(),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),

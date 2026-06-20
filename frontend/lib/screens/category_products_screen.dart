@@ -88,11 +88,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             widget.categoryTitle,
             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Showing products in ${widget.categoryTitle}',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.textMuted),
-          ),
         ],
       ),
     );
