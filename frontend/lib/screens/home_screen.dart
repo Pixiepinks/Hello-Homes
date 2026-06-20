@@ -81,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _buildAutoSlider(context),
                   const _HomepagePromoBanner(),
+                  const _ExistingHomepageBanner(),
                   _buildSectionTitle(context, 'Best Offers'),
                   const SizedBox(height: 16),
                   _buildBestOffersSection(context),
@@ -437,14 +438,25 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
   }
 
   Future<void> _fetchActiveBanner() async {
+    final uri = Uri.parse('${AppConstants.apiUrl}/promotion-banners?active=1');
+    debugPrint('[Home] loading promotion banner');
+    debugPrint('[Home] promotion banner API URL: $uri');
+
     try {
-      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/promotion-banners?active=1'));
+      final response = await http.get(uri);
+      debugPrint('[Home] promotion banner response status: ${response.statusCode}');
+      debugPrint('[Home] raw response: ${response.body}');
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as List<dynamic>;
-        if (data.isNotEmpty) {
-          _banner = PromotionBanner.fromJson(data.first);
+        final decoded = json.decode(response.body);
+        if (decoded is List<dynamic> && decoded.isNotEmpty && decoded.first is Map) {
+          _banner = PromotionBanner.fromJson(Map<String, dynamic>.from(decoded.first as Map));
+          debugPrint('[Home] parsed banner: ${_banner!.toJson()}');
+          debugPrint('[Home] promotion banner image URL: ${_banner!.bannerImageUrl}');
           _updateRemaining();
           _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
+        } else {
+          debugPrint('[Home] parsed banner: null');
         }
       }
     } catch (e) {
@@ -470,15 +482,24 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading || _banner == null || !_banner!.isCurrentlyActive) return const SizedBox.shrink();
-    final banner = _banner!;
+    final banner = _banner;
+    final shouldShowPromotionBanner = !_loading &&
+        banner != null &&
+        banner.bannerImageUrl.trim().isNotEmpty &&
+        banner.isCurrentlyActive;
+    debugPrint('[Home] shouldShowPromotionBanner: $shouldShowPromotionBanner');
+    if (!shouldShowPromotionBanner) return const SizedBox.shrink();
+    debugPrint('[Home] promotion banner image URL: ${banner.bannerImageUrl}');
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 700;
     final image = CachedNetworkImage(
       imageUrl: banner.bannerImageUrl,
       width: double.infinity,
       fit: BoxFit.cover,
-      errorWidget: (context, url, error) => const _PromoBannerPlaceholder(),
+      errorWidget: (context, url, error) {
+        debugPrint('[Home] promotion banner image URL: $url');
+        return _PromoBannerPlaceholder(imageUrl: url);
+      },
     );
 
     return Padding(
@@ -570,7 +591,9 @@ class _CountdownOverlay extends StatelessWidget {
 }
 
 class _PromoBannerPlaceholder extends StatelessWidget {
-  const _PromoBannerPlaceholder();
+  const _PromoBannerPlaceholder({required this.imageUrl});
+
+  final String imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -583,8 +606,61 @@ class _PromoBannerPlaceholder extends StatelessWidget {
           end: Alignment.centerRight,
         ),
       ),
-      child: const Center(
-        child: Icon(Icons.local_offer_outlined, color: Colors.white70, size: 44),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.broken_image_outlined, color: Colors.white70, size: 44),
+              const SizedBox(height: 12),
+              Text(
+                'Promotion banner image failed to load',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                imageUrl,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExistingHomepageBanner extends StatelessWidget {
+  const _ExistingHomepageBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, isMobile ? 4 : 6, 24, isMobile ? 18 : 24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: AspectRatio(
+          aspectRatio: isMobile ? 16 / 6 : 1920 / 360,
+          child: Image.asset(
+            'assets/images/home-banner.png',
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppTheme.backgroundLight,
+              alignment: Alignment.center,
+              child: Text(
+                'Homepage banner unavailable',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

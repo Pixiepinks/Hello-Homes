@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String _defaultBaseUrl = 'https://hello-homes-production.up.railway.app';
+  static const String _defaultBaseUrl = '';
 
   // Override at build time with:
   // flutter build web --dart-define=API_BASE_URL=https://api.example.com
@@ -8,7 +8,7 @@ class AppConstants {
   static String get baseUrl => _configuredBaseUrl.trim().isEmpty
       ? _defaultBaseUrl
       : _configuredBaseUrl.trim().replaceFirst(RegExp(r'/$'), '');
-  static String get apiUrl => '$baseUrl/api';
+  static String get apiUrl => baseUrl.isEmpty ? '/api' : '$baseUrl/api';
 
   // Supabase Storage configuration for admin image uploads.
   // Override at build time with:
