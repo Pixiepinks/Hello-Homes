@@ -19,7 +19,8 @@ flutter build web --release --base-href / \
   --dart-define="SUPABASE_URL=${SUPABASE_URL:-}" \
   --dart-define="SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}" \
   --dart-define="SUPABASE_PRODUCT_BUCKET=${SUPABASE_PRODUCT_BUCKET:-product-images}" \
-  --dart-define="SUPABASE_CATEGORY_BUCKET=${SUPABASE_CATEGORY_BUCKET:-category-images}"
+  --dart-define="SUPABASE_CATEGORY_BUCKET=${SUPABASE_CATEGORY_BUCKET:-category-images}" \
+  --dart-define="SUPABASE_PAYMENT_SLIP_BUCKET=${SUPABASE_PAYMENT_SLIP_BUCKET:-payment-slips}"
 
 mkdir -p "${BACKEND_PUBLIC_DIR}"
 
