@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\PromotionBannerController;
 
 // Public Routes
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::post('/orders/{id}/upload-slip', [OrderController::class, 'uploadSlip']);

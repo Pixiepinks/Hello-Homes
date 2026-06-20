@@ -37,6 +37,17 @@ class Product {
     this.categoryName = '',
   });
 
+  List<String> get galleryImages {
+    final urls = <String>[];
+    for (final url in [imageUrl, ...images]) {
+      final trimmed = url.trim();
+      if (trimmed.isNotEmpty && !urls.contains(trimmed)) {
+        urls.add(trimmed);
+      }
+    }
+    return urls;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     // Handle cases where PHP might return an empty array [] instead of an empty object {}
     Map<String, String> parsedSpecs = {};
@@ -57,12 +68,12 @@ class Product {
 
     List<String> parsedImages = [];
     if (json['images'] is List) {
-      parsedImages = (json['images'] as List).map((e) => e?.toString() ?? '').toList();
+      parsedImages = (json['images'] as List).map((e) => e?.toString().trim() ?? '').where((url) => url.isNotEmpty).toList();
     } else if (json['images'] is String) {
        try {
          final decoded = jsonDecode(json['images']);
          if (decoded is List) {
-           parsedImages = decoded.map((e) => e?.toString() ?? '').toList();
+           parsedImages = decoded.map((e) => e?.toString().trim() ?? '').where((url) => url.isNotEmpty).toList();
          }
        } catch (_) {}
     }
@@ -73,7 +84,7 @@ class Product {
       subtitle: json['subtitle']?.toString() ?? '',
       price: double.tryParse(json['price'].toString()) ?? 0.0,
       originalPrice: double.tryParse(json['original_price'].toString()) ?? 0.0,
-      imageUrl: json['image_url']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString().trim() ?? '',
       isNew: json['is_new'] == 1 || json['is_new'] == true,
       isOnSale: json['is_on_sale'] == 1 || json['is_on_sale'] == true,
       images: parsedImages,
