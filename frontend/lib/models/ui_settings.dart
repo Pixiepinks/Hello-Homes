@@ -4,7 +4,10 @@ bool parseApiBool(dynamic value) {
   if (value == true || value == 1) return true;
   if (value is String) {
     final normalized = value.trim().toLowerCase();
-    return normalized == 'true' || normalized == '1' || normalized == 'yes' || normalized == 'on';
+    return normalized == 'true' ||
+        normalized == '1' ||
+        normalized == 'yes' ||
+        normalized == 'on';
   }
   return false;
 }
@@ -25,7 +28,8 @@ class UiSettings {
   factory UiSettings.fromJson(Map<String, dynamic> json) {
     return UiSettings(
       productNameOneLine: parseApiBool(json['product_name_one_line']),
-      productsPerRowDesktop: int.tryParse(json['products_per_row_desktop']?.toString() ?? '') ?? 6,
+      productsPerRowDesktop:
+          int.tryParse(json['products_per_row_desktop']?.toString() ?? '') ?? 6,
       currencySymbol: json['currency_symbol']?.toString() ?? 'Rs.',
       showCarouselArrows: parseApiBool(json['show_carousel_arrows']),
     );
@@ -47,9 +51,23 @@ class HeroBanner {
   final int sortOrder;
   final bool isActive;
 
-  const HeroBanner({required this.id, this.title, required this.imageUrl, this.linkUrl, required this.sortOrder, required this.isActive});
+  const HeroBanner({
+    required this.id,
+    this.title,
+    required this.imageUrl,
+    this.linkUrl,
+    required this.sortOrder,
+    required this.isActive,
+  });
 
-  HeroBanner copyWith({String? title, String? imageUrl, String? linkUrl, int? sortOrder, bool? isActive}) => HeroBanner(
+  HeroBanner copyWith({
+    String? title,
+    String? imageUrl,
+    String? linkUrl,
+    int? sortOrder,
+    bool? isActive,
+  }) =>
+      HeroBanner(
         id: id,
         title: title ?? this.title,
         imageUrl: imageUrl ?? this.imageUrl,
@@ -154,13 +172,25 @@ class PromotionBanner {
         bannerImageUrl: json['banner_image_url']?.toString() ?? '',
         productId: json['product_id']?.toString() ?? '',
         productSlug: json['product_slug']?.toString(),
-        productUrl: (json['product_url']?.toString() ?? '').isNotEmpty ? json['product_url'].toString() : '/product/${json['product_id']}',
-        discountPercentage: int.tryParse(json['discount_percentage']?.toString() ?? ''),
+        productUrl: _parseProductUrl(json),
+        discountPercentage:
+            int.tryParse(json['discount_percentage']?.toString() ?? ''),
         originalPrice: double.tryParse(json['original_price']?.toString() ?? ''),
-        discountedPrice: double.tryParse(json['discounted_price']?.toString() ?? ''),
+        discountedPrice:
+            double.tryParse(json['discounted_price']?.toString() ?? ''),
         offerStartAt: DateTime.tryParse(json['offer_start_at']?.toString() ?? ''),
         offerEndAt: DateTime.tryParse(json['offer_end_at']?.toString() ?? ''),
         createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
         updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? ''),
       );
+
+  static String _parseProductUrl(Map<String, dynamic> json) {
+    final productUrl = json['product_url']?.toString().trim() ?? '';
+    if (productUrl.isNotEmpty) return productUrl;
+
+    final productSlug = json['product_slug']?.toString().trim() ?? '';
+    if (productSlug.isNotEmpty) return '/product/$productSlug';
+
+    return '/product/${json['product_id']}';
+  }
 }
