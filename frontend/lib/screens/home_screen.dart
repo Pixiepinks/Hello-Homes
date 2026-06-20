@@ -514,34 +514,10 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
               fit: StackFit.expand,
               children: [
                 image,
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.black.withAlpha(isMobile ? 120 : 95), Colors.transparent, Colors.black.withAlpha(120)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 42, vertical: isMobile ? 10 : 24),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if ((banner.discountPercentage ?? 0) > 0)
-                              Text('${banner.discountPercentage}% OFF', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.accentOrange, fontWeight: FontWeight.w800)),
-                            Text(banner.title, maxLines: isMobile ? 1 : 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                            if (!isMobile && banner.subtitle.isNotEmpty) Text(banner.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white.withAlpha(230))),
-                          ],
-                        ),
-                      ),
-                      _CountdownOverlay(remaining: _remaining, compact: isMobile),
-                    ],
-                  ),
+                Positioned(
+                  left: isMobile ? 16 : 42,
+                  bottom: isMobile ? 10 : 24,
+                  child: _CountdownOverlay(remaining: _remaining, compact: isMobile),
                 ),
                 Positioned(
                   right: isMobile ? 16 : 42,
