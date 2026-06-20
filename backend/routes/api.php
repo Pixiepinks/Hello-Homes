@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\BankDetailController;
 use App\Http\Controllers\Api\UiSettingController;
 use App\Http\Controllers\Api\HeroBannerController;
 use App\Http\Controllers\Api\PromotionBannerController;
+use App\Http\Controllers\Api\PaymentSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +29,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::post('/orders/{id}/upload-slip', [OrderController::class, 'uploadSlip']);
 Route::get('/bank-details/active', [BankDetailController::class, 'active']);
+Route::get('/payment-settings', [PaymentSettingController::class, 'show']);
 Route::get('/delivery-options', [DeliveryOptionController::class, 'index']);
 Route::get('/ui-settings', [UiSettingController::class, 'index']);
 Route::get('/hero-banners', [HeroBannerController::class, 'index']);
@@ -79,7 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/promotion-banners/{promotionBanner}/end', [PromotionBannerController::class, 'end']);
         Route::apiResource('promotion-banners', PromotionBannerController::class)->except(['index', 'show']);
 
-        // Bank Details (Admin)
-        Route::apiResource('bank-details', BankDetailController::class)->except(['active']);
+        // Bank Details and Payment Settings (Admin)
+        Route::put('/payment-settings', [PaymentSettingController::class, 'update']);
+        Route::apiResource('bank-details', BankDetailController::class);
     });
 });
