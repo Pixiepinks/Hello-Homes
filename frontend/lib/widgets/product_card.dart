@@ -31,9 +31,10 @@ class _HoverProductCardState extends State<HoverProductCard> {
     final badgeInset = isCompactCard ? 8.0 : 12.0;
     final badgeHorizontalPadding = isCompactCard ? 6.0 : 8.0;
     final badgeVerticalPadding = isCompactCard ? 3.0 : 4.0;
+    final imagePadding = isCompactCard ? 8.0 : 10.0;
     final detailsPadding = isCompactCard
-        ? const EdgeInsets.fromLTRB(10, 8, 10, 10)
-        : const EdgeInsets.fromLTRB(12, 10, 12, 12);
+        ? const EdgeInsets.fromLTRB(10, 7, 10, 9)
+        : const EdgeInsets.fromLTRB(12, 8, 12, 10);
     final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: AppTheme.textMuted,
           fontWeight: FontWeight.w600,
@@ -86,24 +87,18 @@ class _HoverProductCardState extends State<HoverProductCard> {
             children: [
               // Image Section
               Expanded(
-                flex: 6,
+                flex: 7,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 1.0, end: _isHovered ? 1.05 : 1.0),
-                        duration: const Duration(milliseconds: 250),
-                        builder: (context, scale, child) {
-                          return Transform.scale(
-                            scale: scale,
-                            child: child,
-                          );
-                        },
+                      child: Container(
+                        color: AppTheme.backgroundLight,
+                        padding: EdgeInsets.all(imagePadding),
                         child: CachedNetworkImage(
                           imageUrl: widget.product.imageUrl,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           placeholder: (context, url) => Container(color: AppTheme.backgroundLight),
                           errorWidget: (context, url, error) => const Icon(Icons.error),
                         ),
@@ -156,7 +151,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(Icons.shopping_cart_checkout, size: 16, color: AppTheme.primaryBlue),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Text(
                                 'Add to Cart',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -191,7 +186,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                       Text(
                         widget.product.title,
                         style: titleStyle,
-                        maxLines: uiSettings.productNameOneLine ? 1 : 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
@@ -205,7 +200,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Flexible(
                             child: Text(
                               formatPrice(widget.product.price, currencySymbol: uiSettings.currencySymbol),

@@ -319,12 +319,12 @@ class _ProductCarouselState extends State<_ProductCarousel> {
         final uiSettings = context.watch<UiSettingsProvider>().settings;
         final visibleItems = getProductCrossAxisCount(constraints.maxWidth, desktopCount: uiSettings.productsPerRowDesktop);
         final itemWidth = getProductCarouselItemWidth(constraints.maxWidth, desktopCount: uiSettings.productsPerRowDesktop);
-        final spacing = visibleItems == 2 ? 12.0 : 18.0;
+        final spacing = visibleItems == 2 ? 12.0 : (constraints.maxWidth >= 900 ? 12.0 : 14.0);
         final scrollDistance =
             (itemWidth * visibleItems) + (spacing * visibleItems);
 
         return SizedBox(
-          height: constraints.maxWidth < 600 ? 280 : 320,
+          height: constraints.maxWidth < 600 ? 290 : 340,
           child: Stack(
             clipBehavior: Clip.none,
             children: [

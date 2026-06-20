@@ -15,9 +15,9 @@ SliverGridDelegateWithFixedCrossAxisCount productGridDelegate(
   final desktopCount = context?.watch<UiSettingsProvider>().settings.productsPerRowDesktop;
   return SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: getProductCrossAxisCount(width, desktopCount: desktopCount),
-    mainAxisSpacing: 18,
-    crossAxisSpacing: 18,
-    childAspectRatio: 0.72,
+    mainAxisSpacing: 16,
+    crossAxisSpacing: width >= 900 ? 12 : 14,
+    childAspectRatio: width >= 900 ? 0.68 : 0.72,
   );
 }
 
@@ -26,6 +26,6 @@ double getProductCarouselItemWidth(
   int? desktopCount,
 }) {
   final visibleItems = getProductCrossAxisCount(width, desktopCount: desktopCount);
-  final spacing = visibleItems == 2 ? 12.0 : 18.0;
+  final spacing = visibleItems == 2 ? 12.0 : (width >= 900 ? 12.0 : 14.0);
   return (width - (spacing * (visibleItems - 1))) / visibleItems;
 }
