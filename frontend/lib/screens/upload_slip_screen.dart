@@ -149,12 +149,69 @@ class _UploadSlipScreenState extends State<UploadSlipScreen> {
   Widget _summaryRow(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: const TextStyle(color: AppTheme.textMuted)), Text(value, style: const TextStyle(fontWeight: FontWeight.bold))]));
 
   Widget _buildBankDetails() {
-    if (_bankDetails.isEmpty) return const Text('No active bank accounts are available. Please contact support.', style: TextStyle(color: AppTheme.textMuted));
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Align(alignment: Alignment.centerLeft, child: Text('Bank Account Details:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-      const SizedBox(height: 8),
-      ..._bankDetails.map((bank) => Container(width: double.infinity, margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(bank['bank_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)), if (bank['branch_name'] != null) Text('Branch: ${bank['branch_name']}', style: const TextStyle(fontSize: 12)), Text('Acc Name: ${bank['account_name']}', style: const TextStyle(fontSize: 12)), Text('Acc No: ${bank['account_number']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))]))
-    ]);
+    if (_bankDetails.isEmpty) {
+      return const Text(
+        'No active bank accounts are available. Please contact support.',
+        style: TextStyle(color: AppTheme.textMuted),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Bank Account Details:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._bankDetails.map((bank) {
+          return Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  bank['bank_name'] ?? '',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+                if (bank['branch_name'] != null)
+                  Text(
+                    'Branch: ${bank['branch_name']}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                Text(
+                  'Acc Name: ${bank['account_name']}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                Text(
+                  'Acc No: ${bank['account_number']}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
   }
 
   Widget _selectedFileCard() => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.green.withAlpha(20), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green)), child: Row(children: [const Icon(Icons.check_circle, color: Colors.green), const SizedBox(width: 12), Expanded(child: Text(_selectedFile!.name, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)), IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => setState(() => _selectedFile = null))]));
