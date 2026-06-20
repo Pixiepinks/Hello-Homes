@@ -569,6 +569,27 @@ class _CountdownOverlay extends StatelessWidget {
       );
 }
 
+class _PromoBannerPlaceholder extends StatelessWidget {
+  const _PromoBannerPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryBlue, AppTheme.darkBlue],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(Icons.local_offer_outlined, color: Colors.white70, size: 44),
+      ),
+    );
+  }
+}
+
 // Auto Slider Widget
 class _HeroAutoSlider extends StatefulWidget {
   const _HeroAutoSlider();
