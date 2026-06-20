@@ -210,12 +210,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                   width: double.infinity,
                   child: Hero(
                     tag: 'product_image_${product.id}',
-                    child: Transform.scale(
-                      scale: (!isMobile && _isHovering) ? 2.5 : 1.0,
-                      alignment: FractionalOffset(_hoverPosition.dx, _hoverPosition.dy),
-                      child: CachedNetworkImage(
-                        imageUrl: galleryImages.isNotEmpty ? galleryImages[_selectedImageIndex] : product.imageUrl,
-                        fit: BoxFit.cover,
+                    child: ColoredBox(
+                      color: Colors.white,
+                      child: Transform.scale(
+                        scale: (!isMobile && _isHovering) ? 2.5 : 1.0,
+                        alignment: FractionalOffset(_hoverPosition.dx, _hoverPosition.dy),
+                        child: CachedNetworkImage(
+                          imageUrl: galleryImages.isNotEmpty ? galleryImages[_selectedImageIndex] : product.imageUrl,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -246,9 +249,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: CachedNetworkImage(
-                        imageUrl: galleryImages[index],
-                        fit: BoxFit.cover,
+                      child: ColoredBox(
+                        color: Colors.white,
+                        child: CachedNetworkImage(
+                          imageUrl: galleryImages[index],
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),

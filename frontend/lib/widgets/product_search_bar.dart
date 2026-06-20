@@ -185,7 +185,12 @@ class _ProductSearchBarState extends State<ProductSearchBar> {
                                   width: 40,
                                   height: 40,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(color: Colors.grey[200], width: 40, height: 40, child: const Icon(Icons.image, size: 20)),
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.white,
+                                    width: 40,
+                                    height: 40,
+                                    child: const Icon(Icons.image, size: 20),
+                                  ),
                                 ),
                               ),
                               title: Text(product['title'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
