@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\BankDetailController;
 use App\Http\Controllers\Api\UiSettingController;
 use App\Http\Controllers\Api\HeroBannerController;
+use App\Http\Controllers\Api\PromotionBannerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,7 @@ Route::get('/bank-details/active', [BankDetailController::class, 'active']);
 Route::get('/delivery-options', [DeliveryOptionController::class, 'index']);
 Route::get('/ui-settings', [UiSettingController::class, 'index']);
 Route::get('/hero-banners', [HeroBannerController::class, 'index']);
+Route::get('/promotion-banners', [PromotionBannerController::class, 'index']);
 
 // Public Auth Routes
 Route::get('/auth/check-email', [AuthController::class, 'checkEmail']);
@@ -73,6 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/ui-settings', [UiSettingController::class, 'update']);
         Route::post('/hero-banners/order', [HeroBannerController::class, 'updateOrder']);
         Route::apiResource('hero-banners', HeroBannerController::class)->except(['index', 'show']);
+        Route::post('/promotion-banners/{promotionBanner}/end', [PromotionBannerController::class, 'end']);
+        Route::apiResource('promotion-banners', PromotionBannerController::class)->except(['index', 'show']);
 
         // Bank Details (Admin)
         Route::apiResource('bank-details', BankDetailController::class)->except(['active']);

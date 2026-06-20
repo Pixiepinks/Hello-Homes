@@ -64,3 +64,80 @@ class HeroBanner {
         isActive: json['is_active'] == true || json['is_active'] == 1,
       );
 }
+
+class PromotionBanner {
+  final int id;
+  final bool isActive;
+  final String title;
+  final String subtitle;
+  final String bannerImageUrl;
+  final String productId;
+  final String? productSlug;
+  final String productUrl;
+  final int? discountPercentage;
+  final double? originalPrice;
+  final double? discountedPrice;
+  final DateTime? offerStartAt;
+  final DateTime? offerEndAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  const PromotionBanner({
+    required this.id,
+    required this.isActive,
+    required this.title,
+    required this.subtitle,
+    required this.bannerImageUrl,
+    required this.productId,
+    this.productSlug,
+    required this.productUrl,
+    this.discountPercentage,
+    this.originalPrice,
+    this.discountedPrice,
+    this.offerStartAt,
+    this.offerEndAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  bool get isCurrentlyActive {
+    final now = DateTime.now();
+    if (!isActive) return false;
+    if (offerStartAt != null && offerStartAt!.isAfter(now)) return false;
+    if (offerEndAt != null && !offerEndAt!.isAfter(now)) return false;
+    return true;
+  }
+
+  Map<String, dynamic> toJson() => {
+        'is_active': isActive,
+        'title': title,
+        'subtitle': subtitle,
+        'banner_image_url': bannerImageUrl,
+        'product_id': productId,
+        'product_slug': productSlug,
+        'product_url': productUrl,
+        'discount_percentage': discountPercentage,
+        'original_price': originalPrice,
+        'discounted_price': discountedPrice,
+        'offer_start_at': offerStartAt?.toIso8601String(),
+        'offer_end_at': offerEndAt?.toIso8601String(),
+      };
+
+  factory PromotionBanner.fromJson(Map<String, dynamic> json) => PromotionBanner(
+        id: int.parse(json['id'].toString()),
+        isActive: json['is_active'] == true || json['is_active'] == 1,
+        title: json['title']?.toString() ?? '',
+        subtitle: json['subtitle']?.toString() ?? '',
+        bannerImageUrl: json['banner_image_url']?.toString() ?? '',
+        productId: json['product_id']?.toString() ?? '',
+        productSlug: json['product_slug']?.toString(),
+        productUrl: (json['product_url']?.toString() ?? '').isNotEmpty ? json['product_url'].toString() : '/product/${json['product_id']}',
+        discountPercentage: int.tryParse(json['discount_percentage']?.toString() ?? ''),
+        originalPrice: double.tryParse(json['original_price']?.toString() ?? ''),
+        discountedPrice: double.tryParse(json['discounted_price']?.toString() ?? ''),
+        offerStartAt: DateTime.tryParse(json['offer_start_at']?.toString() ?? ''),
+        offerEndAt: DateTime.tryParse(json['offer_end_at']?.toString() ?? ''),
+        createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
+        updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? ''),
+      );
+}
