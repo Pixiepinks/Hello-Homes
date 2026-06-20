@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/ui_settings.dart';
+import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/ui_settings_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../utils/supabase_storage_upload_service.dart';
 
 class AdminUiSettingsView extends StatefulWidget {
   const AdminUiSettingsView({super.key});
@@ -15,9 +18,19 @@ class AdminUiSettingsView extends StatefulWidget {
   State<AdminUiSettingsView> createState() => _AdminUiSettingsViewState();
 }
 
+class _PromotionPreviewFallback extends StatelessWidget {
+  const _PromotionPreviewFallback();
+
+  @override
+  Widget build(BuildContext context) => Container(color: AppTheme.backgroundLight, alignment: Alignment.center, child: const Icon(Icons.broken_image, color: AppTheme.textMuted));
+}
+
 class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
   final _currencyController = TextEditingController(text: 'Rs.');
   List<HeroBanner> _banners = [];
+  List<PromotionBanner> _promotionBanners = [];
+  List<Product> _products = [];
+  final SupabaseStorageUploadService _uploadService = SupabaseStorageUploadService();
   bool _loading = true;
   String? _bannerLoadError;
   bool _saving = false;
@@ -49,6 +62,14 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     try {
       _bannerLoadError = null;
       final response = await http.get(Uri.parse('${AppConstants.apiUrl}/hero-banners'));
+      final promoResponse = await http.get(Uri.parse('${AppConstants.apiUrl}/promotion-banners'));
+      final productsResponse = await http.get(Uri.parse('${AppConstants.apiUrl}/products?all=1'));
+      if (promoResponse.statusCode == 200) {
+        _promotionBanners = (json.decode(promoResponse.body) as List<dynamic>).map((item) => PromotionBanner.fromJson(item)).toList();
+      }
+      if (productsResponse.statusCode == 200) {
+        _products = (json.decode(productsResponse.body) as List<dynamic>).map((item) => Product.fromJson(item)).toList();
+      }
       if (response.statusCode == 200) {
         _banners = (json.decode(response.body) as List<dynamic>).map((item) => HeroBanner.fromJson(item)).toList();
         _orderDirty = false;
@@ -196,6 +217,123 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     );
   }
 
+
+
+  Future<void> _showPromotionDialog([PromotionBanner? banner]) async {
+    final title = TextEditingController(text: banner?.title ?? '');
+    final subtitle = TextEditingController(text: banner?.subtitle ?? '');
+    final imageUrl = TextEditingController(text: banner?.bannerImageUrl ?? '');
+    final discount = TextEditingController(text: banner?.discountPercentage?.toString() ?? '');
+    final original = TextEditingController(text: banner?.originalPrice?.toString() ?? '');
+    final discounted = TextEditingController(text: banner?.discountedPrice?.toString() ?? '');
+    final start = TextEditingController(text: banner?.offerStartAt?.toIso8601String().substring(0, 16) ?? DateTime.now().toIso8601String().substring(0, 16));
+    final end = TextEditingController(text: banner?.offerEndAt?.toIso8601String().substring(0, 16) ?? DateTime.now().add(const Duration(days: 7)).toIso8601String().substring(0, 16));
+    var isActive = banner?.isActive ?? true;
+    var productId = banner?.productId.isNotEmpty == true ? banner!.productId : (_products.isNotEmpty ? _products.first.id : null);
+    var uploading = false;
+    String? error;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(banner == null ? 'Create Discount Promotion Banner' : 'Edit Discount Promotion Banner'),
+          content: SizedBox(
+            width: 640,
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                if (error != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(error!, style: const TextStyle(color: Colors.red))),
+                SwitchListTile(value: isActive, onChanged: (v) => setDialogState(() => isActive = v), title: const Text('Enabled')),
+                TextField(controller: title, decoration: const InputDecoration(labelText: 'Title')),
+                TextField(controller: subtitle, decoration: const InputDecoration(labelText: 'Subtitle')),
+                DropdownButtonFormField<String>(
+                  value: productId,
+                  decoration: const InputDecoration(labelText: 'Linked product'),
+                  items: _products.map((p) => DropdownMenuItem(value: p.id, child: Text(p.title, overflow: TextOverflow.ellipsis))).toList(),
+                  onChanged: (v) => setDialogState(() => productId = v),
+                ),
+                const SizedBox(height: 12),
+                if (imageUrl.text.isNotEmpty) AspectRatio(aspectRatio: 1920 / 400, child: Image.network(imageUrl.text, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const _PromotionPreviewFallback())),
+                Row(children: [
+                  Expanded(child: TextField(controller: imageUrl, decoration: const InputDecoration(labelText: 'Banner image URL'))),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: uploading ? null : () async {
+                      try {
+                        setDialogState(() { uploading = true; error = null; });
+                        final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                        if (picked == null) return;
+                        final url = await _uploadService.uploadImage(file: picked, bucket: 'promotion-banners', folder: 'homepage');
+                        if (url == null) throw const SupabaseStorageUploadException('Supabase storage is not configured. Paste an image URL instead.');
+                        setDialogState(() => imageUrl.text = url);
+                      } catch (e) {
+                        setDialogState(() => error = e.toString());
+                      } finally {
+                        setDialogState(() => uploading = false);
+                      }
+                    },
+                    icon: const Icon(Icons.upload),
+                    label: Text(uploading ? 'Uploading...' : 'Upload'),
+                  ),
+                ]),
+                const Align(alignment: Alignment.centerLeft, child: Text('Recommended image size: 1920x400. Allowed: JPG, JPEG, PNG, WEBP.')),
+                Row(children: [
+                  Expanded(child: TextField(controller: discount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Discount %'))),
+                  const SizedBox(width: 8),
+                  Expanded(child: TextField(controller: original, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Original price'))),
+                  const SizedBox(width: 8),
+                  Expanded(child: TextField(controller: discounted, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Discounted price'))),
+                ]),
+                Row(children: [
+                  Expanded(child: TextField(controller: start, decoration: const InputDecoration(labelText: 'Offer start (YYYY-MM-DDTHH:mm)'))),
+                  const SizedBox(width: 8),
+                  Expanded(child: TextField(controller: end, decoration: const InputDecoration(labelText: 'Offer end (YYYY-MM-DDTHH:mm)'))),
+                ]),
+              ]),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () async {
+              if (productId == null || imageUrl.text.trim().isEmpty || title.text.trim().isEmpty) {
+                setDialogState(() => error = 'Title, product, and banner image are required.');
+                return;
+              }
+              final payload = json.encode({
+                'is_active': isActive,
+                'title': title.text.trim(),
+                'subtitle': subtitle.text.trim(),
+                'banner_image_url': imageUrl.text.trim(),
+                'product_id': productId,
+                'product_url': '/product/$productId',
+                'discount_percentage': int.tryParse(discount.text),
+                'original_price': double.tryParse(original.text),
+                'discounted_price': double.tryParse(discounted.text),
+                'offer_start_at': DateTime.tryParse(start.text)?.toIso8601String(),
+                'offer_end_at': DateTime.tryParse(end.text)?.toIso8601String(),
+              });
+              final uri = banner == null ? Uri.parse('${AppConstants.apiUrl}/promotion-banners') : Uri.parse('${AppConstants.apiUrl}/promotion-banners/${banner.id}');
+              final response = banner == null ? await http.post(uri, headers: _authHeaders, body: payload) : await http.put(uri, headers: _authHeaders, body: payload);
+              if (response.statusCode == 200 || response.statusCode == 201) {
+                if (mounted) Navigator.pop(context);
+                _load();
+              } else {
+                setDialogState(() => error = 'Unable to save promotion banner (${response.statusCode}). Check all fields and dates.');
+              }
+            }, child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _endPromotion(PromotionBanner banner) async {
+    final response = await http.post(Uri.parse('${AppConstants.apiUrl}/promotion-banners/${banner.id}/end'), headers: _authHeaders);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.statusCode == 200 ? 'Promotion ended' : 'Unable to end promotion')));
+    _load();
+  }
+
   Future<void> _saveBannerOrder() async {
     setState(() => _savingOrder = true);
     final response = await http.post(
@@ -313,6 +451,30 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
               );
             },
           ),
+        ]),
+
+        _panel('Discount Promotion Banner', [
+          Row(children: [
+            Expanded(child: Text('Manage one active homepage discount banner at a time. Expired offers are automatically hidden from the homepage.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted))),
+            ElevatedButton.icon(onPressed: () => _showPromotionDialog(), icon: const Icon(Icons.add), label: const Text('Create Offer')),
+          ]),
+          const SizedBox(height: 12),
+          if (_promotionBanners.isEmpty)
+            Container(width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppTheme.backgroundLight, borderRadius: BorderRadius.circular(8)), child: const Text('No discount promotion banners yet.'))
+          else
+            ..._promotionBanners.map((promo) => Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: AppTheme.borderLight)),
+              child: ListTile(
+                leading: SizedBox(width: 96, child: Image.network(promo.bannerImageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image))),
+                title: Text(promo.title.isEmpty ? 'Promotion ${promo.id}' : promo.title),
+                subtitle: Text('${promo.isCurrentlyActive ? 'Active' : 'Inactive/expired'} • Ends: ${promo.offerEndAt ?? 'Not set'} • Product: ${promo.productId}'),
+                trailing: Wrap(spacing: 4, children: [
+                  TextButton(onPressed: promo.isActive ? () => _endPromotion(promo) : null, child: const Text('End offer')),
+                  IconButton(icon: const Icon(Icons.edit), onPressed: () => _showPromotionDialog(promo)),
+                ]),
+              ),
+            )),
         ]),
         _panel('Homepage Product Cards', [
           SwitchListTile(value: _productNameOneLine, onChanged: (v) => setState(() => _productNameOneLine = v), title: const Text('Display product names in one line')),

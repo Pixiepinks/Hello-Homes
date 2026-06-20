@@ -411,25 +411,128 @@ class _CarouselArrowButton extends StatelessWidget {
   }
 }
 
-class _HomepagePromoBanner extends StatelessWidget {
+class _HomepagePromoBanner extends StatefulWidget {
   const _HomepagePromoBanner();
 
   @override
+  State<_HomepagePromoBanner> createState() => _HomepagePromoBannerState();
+}
+
+class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
+  PromotionBanner? _banner;
+  Timer? _timer;
+  Duration _remaining = Duration.zero;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchActiveBanner();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchActiveBanner() async {
+    try {
+      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/promotion-banners?active=1'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List<dynamic>;
+        if (data.isNotEmpty) {
+          _banner = PromotionBanner.fromJson(data.first);
+          _updateRemaining();
+          _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading promotion banner: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _updateRemaining() {
+    final banner = _banner;
+    if (banner?.offerEndAt == null) return;
+    final remaining = banner!.offerEndAt!.difference(DateTime.now());
+    if (!mounted) return;
+    setState(() {
+      _remaining = remaining.isNegative ? Duration.zero : remaining;
+      if (remaining.isNegative || remaining.inSeconds == 0) {
+        _banner = null;
+        _timer?.cancel();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    if (_loading || _banner == null || !_banner!.isCurrentlyActive) return const SizedBox.shrink();
+    final banner = _banner!;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 700;
+    final image = CachedNetworkImage(
+      imageUrl: banner.bannerImageUrl,
       width: double.infinity,
+      fit: BoxFit.cover,
+      errorWidget: (context, url, error) => const _PromoBannerPlaceholder(),
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 12 : 18),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: () => context.go('/products'),
-          child: Image.asset(
-            'assets/images/home-banner.png',
-            width: double.infinity,
-            fit: BoxFit.fitWidth,
-            alignment: Alignment.center,
-            errorBuilder: (context, error, stackTrace) {
-              return const _PromoBannerPlaceholder();
-            },
+          onTap: () => context.go(banner.productUrl.isNotEmpty ? banner.productUrl : '/product/${banner.productId}'),
+          child: AspectRatio(
+            aspectRatio: 1920 / 400,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                image,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black.withAlpha(isMobile ? 120 : 95), Colors.transparent, Colors.black.withAlpha(120)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 42, vertical: isMobile ? 10 : 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if ((banner.discountPercentage ?? 0) > 0)
+                              Text('${banner.discountPercentage}% OFF', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.accentOrange, fontWeight: FontWeight.w800)),
+                            Text(banner.title, maxLines: isMobile ? 1 : 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                            if (!isMobile && banner.subtitle.isNotEmpty) Text(banner.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white.withAlpha(230))),
+                          ],
+                        ),
+                      ),
+                      _CountdownOverlay(remaining: _remaining, compact: isMobile),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  right: isMobile ? 16 : 42,
+                  bottom: isMobile ? 10 : 24,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: isMobile ? 7 : 11),
+                    decoration: BoxDecoration(color: AppTheme.accentOrange, borderRadius: BorderRadius.circular(999)),
+                    child: Text('Buy Now', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -437,26 +540,33 @@ class _HomepagePromoBanner extends StatelessWidget {
   }
 }
 
-class _PromoBannerPlaceholder extends StatelessWidget {
-  const _PromoBannerPlaceholder();
+class _CountdownOverlay extends StatelessWidget {
+  const _CountdownOverlay({required this.remaining, required this.compact});
+  final Duration remaining;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 5,
-      child: Container(
-        width: double.infinity,
-        color: AppTheme.backgroundLight,
-        alignment: Alignment.center,
-        child: Text(
-          'Hello Homes Promotion Banner',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.textMuted,
-              ),
-        ),
-      ),
+    final days = remaining.inDays;
+    final hours = remaining.inHours.remainder(24);
+    final minutes = remaining.inMinutes.remainder(60);
+    final seconds = remaining.inSeconds.remainder(60);
+    return Container(
+      padding: EdgeInsets.all(compact ? 8 : 14),
+      decoration: BoxDecoration(color: Colors.black.withAlpha(150), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        _timeBox(context, days, 'Days'), _timeBox(context, hours, 'Hours'), _timeBox(context, minutes, 'Mins'), _timeBox(context, seconds, 'Secs'),
+      ]),
     );
   }
+
+  Widget _timeBox(BuildContext context, int value, String label) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 7),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(value.toString().padLeft(2, '0'), style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white70)),
+        ]),
+      );
 }
 
 // Auto Slider Widget
