@@ -457,7 +457,7 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
   void _updateRemaining() {
     final banner = _banner;
     if (banner?.offerEndAt == null) return;
-    final remaining = banner!.offerEndAt!.difference(DateTime.now());
+    final remaining = banner!.offerEndAt!.toUtc().difference(DateTime.now().toUtc());
     if (!mounted) return;
     setState(() {
       _remaining = remaining.isNegative ? Duration.zero : remaining;
