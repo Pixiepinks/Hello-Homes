@@ -16,6 +16,10 @@ class AdminBankDetailsView extends StatefulWidget {
 class _AdminBankDetailsViewState extends State<AdminBankDetailsView> {
   List _bankDetails = [];
   bool _isLoading = true;
+  bool _isSavingSettings = false;
+  bool _bankTransferEnabled = true;
+  bool _cardPaymentEnabled = false;
+  bool _qrPaymentEnabled = false;
 
   @override
   void initState() {
@@ -36,9 +40,53 @@ class _AdminBankDetailsViewState extends State<AdminBankDetailsView> {
           _bankDetails = json.decode(response.body);
         });
       }
+
+      final settingsResponse = await http.get(
+        Uri.parse('${AppConstants.apiUrl}/payment-settings'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (settingsResponse.statusCode == 200) {
+        final settings = json.decode(settingsResponse.body);
+        setState(() {
+          _bankTransferEnabled = settings['bank_transfer_enabled'] ?? true;
+          _cardPaymentEnabled = settings['card_payment_enabled'] ?? false;
+          _qrPaymentEnabled = settings['qr_payment_enabled'] ?? false;
+        });
+      }
       setState(() => _isLoading = false);
     } catch (e) {
       setState(() => _isLoading = false);
+    }
+  }
+
+
+  Future<void> _savePaymentSettings() async {
+    setState(() => _isSavingSettings = true);
+    try {
+      final token = context.read<AuthProvider>().token;
+      final response = await http.put(
+        Uri.parse('${AppConstants.apiUrl}/payment-settings'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        body: json.encode({
+          'bank_transfer_enabled': _bankTransferEnabled,
+          'card_payment_enabled': _cardPaymentEnabled,
+          'qr_payment_enabled': _qrPaymentEnabled,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment settings saved')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to save payment settings')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving payment settings: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingSettings = false);
     }
   }
 
@@ -130,6 +178,43 @@ class _AdminBankDetailsViewState extends State<AdminBankDetailsView> {
             Text('Bank Details', style: Theme.of(context).textTheme.displaySmall),
             ElevatedButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add), label: const Text('Add Account')),
           ],
+        ),
+        const SizedBox(height: 24),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Payment Method Activation', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  title: const Text('Enable Bank Transfer'),
+                  value: _bankTransferEnabled,
+                  onChanged: (value) => setState(() => _bankTransferEnabled = value),
+                ),
+                SwitchListTile(
+                  title: const Text('Enable Card Payment'),
+                  value: _cardPaymentEnabled,
+                  onChanged: (value) => setState(() => _cardPaymentEnabled = value),
+                ),
+                SwitchListTile(
+                  title: const Text('Enable QR Payment'),
+                  value: _qrPaymentEnabled,
+                  onChanged: (value) => setState(() => _qrPaymentEnabled = value),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: _isSavingSettings ? null : _savePaymentSettings,
+                    child: _isSavingSettings
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Save Payment Settings'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 24),
         Expanded(

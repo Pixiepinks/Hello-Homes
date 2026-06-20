@@ -79,6 +79,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     _fetchDeliveryOptions();
+    _fetchPaymentSettings();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
@@ -97,6 +98,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     });
   }
+
+
+  Future<void> _fetchPaymentSettings() async {
+    try {
+      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/payment-settings'));
+      if (response.statusCode == 200) {
+        final settings = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _bankTransferEnabled = settings['bank_transfer_enabled'] ?? true;
+            _cardPaymentEnabled = settings['card_payment_enabled'] ?? false;
+            _qrPaymentEnabled = settings['qr_payment_enabled'] ?? false;
+            if (!_isPaymentMethodEnabled(_selectedPaymentMethod)) {
+              _selectedPaymentMethod = _firstEnabledPaymentMethod() ?? '';
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching payment settings: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingPaymentSettings = false);
+      }
+    }
+  }
+
+  bool _isPaymentMethodEnabled(String method) {
+    return method == 'transfer' && _bankTransferEnabled ||
+        method == 'card' && _cardPaymentEnabled ||
+        method == 'qr' && _qrPaymentEnabled;
+  }
+
+  String? _firstEnabledPaymentMethod() {
+    if (_bankTransferEnabled) return 'transfer';
+    if (_cardPaymentEnabled) return 'card';
+    if (_qrPaymentEnabled) return 'qr';
+    return null;
+  }
+
+  bool get _hasAvailablePaymentMethod => _bankTransferEnabled || _cardPaymentEnabled || _qrPaymentEnabled;
 
   Future<void> _fetchDeliveryOptions() async {
     try {
@@ -242,7 +284,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  String _selectedPaymentMethod = 'card';
+  String _selectedPaymentMethod = 'transfer';
+  bool _isLoadingPaymentSettings = true;
+  bool _bankTransferEnabled = true;
+  bool _cardPaymentEnabled = false;
+  bool _qrPaymentEnabled = false;
 
   Future<void> _placeOrder(double subtotal, double deliveryFee, Map<String, CartItem> items) async {
     if (!_formKey.currentState!.validate()) {
@@ -251,6 +297,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     final totalAmount = subtotal + deliveryFee;
+
+    if (!_hasAvailablePaymentMethod || !_isPaymentMethodEnabled(_selectedPaymentMethod)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No payment method is currently available. Please contact support.')));
+      return;
+    }
 
     if (_selectedPaymentMethod == 'card') {
       final result = await Navigator.push(
@@ -390,7 +441,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             padding: const EdgeInsets.only(top: 24),
             child: Row(children: [
               ElevatedButton(
-                onPressed: (_isProcessing || (_currentStep == 2 && subtotal == 0)) ? null : details.onStepContinue,
+                onPressed: (_isProcessing || (_currentStep == 2 && (subtotal == 0 || !_hasAvailablePaymentMethod))) ? null : details.onStepContinue,
                 child: _isProcessing && _currentStep == 2
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : Text(_currentStep == 2 ? 'Place Order' : 'Continue'),
@@ -554,9 +605,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildPaymentMethod() {
-    return Column(children: [
-      RadioListTile(value: 'card', groupValue: _selectedPaymentMethod, onChanged: (val) => setState(() => _selectedPaymentMethod = val.toString()), title: const Text('Card Payment')),
-      RadioListTile(value: 'transfer', groupValue: _selectedPaymentMethod, onChanged: (val) => setState(() => _selectedPaymentMethod = val.toString()), title: const Text('Bank Transfer')),
+    if (_isLoadingPaymentSettings) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_hasAvailablePaymentMethod) {
+      return const Text('No payment method is currently available. Please contact support.');
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (_bankTransferEnabled)
+        RadioListTile(value: 'transfer', groupValue: _selectedPaymentMethod, onChanged: (val) => setState(() => _selectedPaymentMethod = val.toString()), title: const Text('Bank Transfer')),
+      if (_cardPaymentEnabled) ...[
+        RadioListTile(value: 'card', groupValue: _selectedPaymentMethod, onChanged: (val) => setState(() => _selectedPaymentMethod = val.toString()), title: const Text('Card Payment')),
+        if (_selectedPaymentMethod == 'card')
+          const Padding(
+            padding: EdgeInsets.only(left: 16, right: 16, bottom: 12),
+            child: Text('Card payment is available in preview mode. You will be redirected to the payment page after placing your order.', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+      ],
+      if (_qrPaymentEnabled) ...[
+        RadioListTile(value: 'qr', groupValue: _selectedPaymentMethod, onChanged: (val) => setState(() => _selectedPaymentMethod = val.toString()), title: const Text('QR Payment')),
+        if (_selectedPaymentMethod == 'qr')
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
+            child: const Text('QR payment details will be shown here when configured.', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+      ],
     ]);
   }
 

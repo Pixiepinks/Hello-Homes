@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderReceipt;
 use App\Models\Notification;
+use App\Models\PaymentSetting;
 
 class OrderController extends Controller
 {
@@ -32,6 +33,17 @@ class OrderController extends Controller
             'nic_number' => 'nullable|string',
             'password' => 'nullable|string|min:6', // Optional password for new account
         ]);
+
+        $settings = PaymentSetting::current();
+        $enabledPaymentMethods = [
+            'transfer' => $settings->bank_transfer_enabled,
+            'card' => $settings->card_payment_enabled,
+            'qr' => $settings->qr_payment_enabled,
+        ];
+
+        if (!($enabledPaymentMethods[$validated['payment_method']] ?? false)) {
+            return response()->json(['message' => 'The selected payment method is currently unavailable.'], 422);
+        }
 
         // Check if user exists, if not create one
         $user = User::where('email', $validated['email'])->first();
