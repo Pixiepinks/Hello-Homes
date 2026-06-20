@@ -65,7 +65,9 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
       final promoResponse = await http.get(Uri.parse('${AppConstants.apiUrl}/promotion-banners'));
       final productsResponse = await http.get(Uri.parse('${AppConstants.apiUrl}/products?all=1'));
       if (promoResponse.statusCode == 200) {
-        _promotionBanners = (json.decode(promoResponse.body) as List<dynamic>).map((item) => PromotionBanner.fromJson(item)).toList();
+        final decodedPromotionBanners = json.decode(promoResponse.body) as List<dynamic>;
+        debugPrint('Loaded promotion banner data: $decodedPromotionBanners');
+        _promotionBanners = decodedPromotionBanners.map((item) => PromotionBanner.fromJson(item)).toList();
       }
       if (productsResponse.statusCode == 200) {
         _products = (json.decode(productsResponse.body) as List<dynamic>).map((item) => Product.fromJson(item)).toList();
@@ -229,6 +231,7 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
     final start = TextEditingController(text: banner?.offerStartAt?.toIso8601String().substring(0, 16) ?? DateTime.now().toIso8601String().substring(0, 16));
     final end = TextEditingController(text: banner?.offerEndAt?.toIso8601String().substring(0, 16) ?? DateTime.now().add(const Duration(days: 7)).toIso8601String().substring(0, 16));
     var isActive = banner?.isActive ?? true;
+    debugPrint('Loaded promotion banner data for dialog: id=${banner?.id} is_active=${banner?.isActive} enabled=$isActive banner_image_url=${banner?.bannerImageUrl} offer_start_at=${banner?.offerStartAt?.toIso8601String()} offer_end_at=${banner?.offerEndAt?.toIso8601String()}');
     var productId = banner?.productId.isNotEmpty == true ? banner!.productId : (_products.isNotEmpty ? _products.first.id : null);
     var uploading = false;
     String? error;
@@ -295,12 +298,24 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             ElevatedButton(onPressed: () async {
+              debugPrint('Promotion banner Save button clicked: id=${banner?.id} enabled_value_before_save=$isActive');
               if (productId == null || imageUrl.text.trim().isEmpty || title.text.trim().isEmpty) {
                 setDialogState(() => error = 'Title, product, and banner image are required.');
                 return;
               }
-              final payload = json.encode({
+              final parsedStart = DateTime.tryParse(start.text.trim());
+              final parsedEnd = DateTime.tryParse(end.text.trim());
+              if (parsedEnd == null || (start.text.trim().isNotEmpty && parsedStart == null)) {
+                setDialogState(() => error = 'Enter valid offer dates using YYYY-MM-DDTHH:mm.');
+                return;
+              }
+              if (parsedStart != null && !parsedEnd.isAfter(parsedStart)) {
+                setDialogState(() => error = 'Offer end must be after offer start.');
+                return;
+              }
+              final payloadMap = {
                 'is_active': isActive,
+                'enabled': isActive,
                 'title': title.text.trim(),
                 'subtitle': subtitle.text.trim(),
                 'banner_image_url': imageUrl.text.trim(),
@@ -309,16 +324,20 @@ class _AdminUiSettingsViewState extends State<AdminUiSettingsView> {
                 'discount_percentage': int.tryParse(discount.text),
                 'original_price': double.tryParse(original.text),
                 'discounted_price': double.tryParse(discounted.text),
-                'offer_start_at': DateTime.tryParse(start.text)?.toIso8601String(),
-                'offer_end_at': DateTime.tryParse(end.text)?.toIso8601String(),
-              });
+                'offer_start_at': parsedStart?.toIso8601String(),
+                'offer_end_at': parsedEnd.toIso8601String(),
+              };
+              final payload = json.encode(payloadMap);
+              debugPrint('Promotion banner payload sent to API: $payloadMap');
               final uri = banner == null ? Uri.parse('${AppConstants.apiUrl}/promotion-banners') : Uri.parse('${AppConstants.apiUrl}/promotion-banners/${banner.id}');
               final response = banner == null ? await http.post(uri, headers: _authHeaders, body: payload) : await http.put(uri, headers: _authHeaders, body: payload);
+              debugPrint('Promotion banner API response: status=${response.statusCode} body=${response.body}');
               if (response.statusCode == 200 || response.statusCode == 201) {
                 if (mounted) Navigator.pop(context);
-                _load();
+                await _load();
               } else {
-                setDialogState(() => error = 'Unable to save promotion banner (${response.statusCode}). Check all fields and dates.');
+                debugPrint('Promotion banner error response: status=${response.statusCode} body=${response.body}');
+                setDialogState(() => error = 'Unable to save promotion banner (${response.statusCode}). ${response.body.isNotEmpty ? response.body : 'Check all fields and dates.'}');
               }
             }, child: const Text('Save')),
           ],
