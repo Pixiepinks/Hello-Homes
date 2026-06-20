@@ -1,5 +1,14 @@
 import 'package:flutter/foundation.dart';
 
+bool parseApiBool(dynamic value) {
+  if (value == true || value == 1) return true;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1' || normalized == 'yes' || normalized == 'on';
+  }
+  return false;
+}
+
 class UiSettings {
   final bool productNameOneLine;
   final int productsPerRowDesktop;
@@ -15,10 +24,10 @@ class UiSettings {
 
   factory UiSettings.fromJson(Map<String, dynamic> json) {
     return UiSettings(
-      productNameOneLine: json['product_name_one_line'] == true || json['product_name_one_line'] == 1,
+      productNameOneLine: parseApiBool(json['product_name_one_line']),
       productsPerRowDesktop: int.tryParse(json['products_per_row_desktop']?.toString() ?? '') ?? 6,
       currencySymbol: json['currency_symbol']?.toString() ?? 'Rs.',
-      showCarouselArrows: json['show_carousel_arrows'] == true || json['show_carousel_arrows'] == 1,
+      showCarouselArrows: parseApiBool(json['show_carousel_arrows']),
     );
   }
 
@@ -63,7 +72,7 @@ class HeroBanner {
         imageUrl: json['image_url']?.toString() ?? '',
         linkUrl: json['link_url']?.toString(),
         sortOrder: int.tryParse(json['sort_order']?.toString() ?? '') ?? 0,
-        isActive: json['is_active'] == true || json['is_active'] == 1,
+        isActive: parseApiBool(json['is_active'] ?? json['enabled']),
       );
 }
 
@@ -123,6 +132,7 @@ class PromotionBanner {
 
   Map<String, dynamic> toJson() => {
         'is_active': isActive,
+        'enabled': isActive,
         'title': title,
         'subtitle': subtitle,
         'banner_image_url': bannerImageUrl,
@@ -138,7 +148,7 @@ class PromotionBanner {
 
   factory PromotionBanner.fromJson(Map<String, dynamic> json) => PromotionBanner(
         id: int.parse(json['id'].toString()),
-        isActive: json['is_active'] == true || json['is_active'] == 1,
+        isActive: parseApiBool(json['is_active'] ?? json['enabled']),
         title: json['title']?.toString() ?? '',
         subtitle: json['subtitle']?.toString() ?? '',
         bannerImageUrl: json['banner_image_url']?.toString() ?? '',

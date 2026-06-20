@@ -45,27 +45,41 @@ class PromotionBannerController extends Controller
 
     public function store(Request $request)
     {
+        Log::debug('Promotion banner create request received', ['payload' => $request->all()]);
         $validated = $this->validateBanner($request);
+        Log::debug('Promotion banner values being created', ['values' => $validated]);
 
         return DB::transaction(function () use ($validated) {
             if (!empty($validated['is_active'])) {
                 PromotionBanner::where('is_active', true)->update(['is_active' => false]);
             }
             $banner = PromotionBanner::create($validated);
-            return response()->json($banner->load('product:id,title,price,original_price,image_url'), 201);
+            $freshBanner = $banner->fresh()->load('product:id,title,price,original_price,image_url');
+            Log::debug('Promotion banner created record values', ['banner' => $freshBanner->toArray()]);
+            return response()->json($freshBanner, 201);
         });
     }
 
     public function update(Request $request, PromotionBanner $promotionBanner)
     {
+        Log::debug('Promotion banner update request received', [
+            'banner_id' => $promotionBanner->id,
+            'payload' => $request->all(),
+        ]);
         $validated = $this->validateBanner($request);
+        Log::debug('Promotion banner values being updated', [
+            'banner_id' => $promotionBanner->id,
+            'values' => $validated,
+        ]);
 
         return DB::transaction(function () use ($validated, $promotionBanner) {
             if (!empty($validated['is_active'])) {
                 PromotionBanner::where('id', '!=', $promotionBanner->id)->where('is_active', true)->update(['is_active' => false]);
             }
             $promotionBanner->update($validated);
-            return response()->json($promotionBanner->fresh()->load('product:id,title,price,original_price,image_url'));
+            $freshBanner = $promotionBanner->fresh()->load('product:id,title,price,original_price,image_url');
+            Log::debug('Promotion banner updated record values', ['banner' => $freshBanner->toArray()]);
+            return response()->json($freshBanner);
         });
     }
 
@@ -102,8 +116,13 @@ class PromotionBannerController extends Controller
 
     private function validateBanner(Request $request): array
     {
+        if ($request->has('enabled') && !$request->has('is_active')) {
+            $request->merge(['is_active' => $request->boolean('enabled')]);
+        }
+
         $validated = $request->validate([
-            'is_active' => 'boolean',
+            'is_active' => 'sometimes|boolean',
+            'enabled' => 'sometimes|boolean',
             'title' => 'nullable|string|max:255',
             'subtitle' => 'nullable|string|max:255',
             'banner_image_url' => 'required|string|max:2048',
@@ -116,6 +135,8 @@ class PromotionBannerController extends Controller
             'offer_start_at' => 'nullable|date',
             'offer_end_at' => 'required|date|after:offer_start_at',
         ]);
+
+        unset($validated['enabled']);
 
         foreach (['offer_start_at', 'offer_end_at'] as $field) {
             if (!empty($validated[$field])) {
