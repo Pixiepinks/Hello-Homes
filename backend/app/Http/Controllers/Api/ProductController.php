@@ -43,6 +43,17 @@ class ProductController extends Controller
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
+    public function show($id)
+    {
+        $product = Product::with(['deliveryOption', 'category'])->find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        return response()->json($product);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

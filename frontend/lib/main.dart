@@ -8,7 +8,6 @@ import 'screens/product_detail_screen.dart';
 import 'screens/checkout_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
-import 'models/product.dart';
 import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
@@ -55,9 +54,8 @@ GoRouter _buildRouter(AuthProvider authProvider) {
       GoRoute(
         path: '/product/:id',
         builder: (context, state) {
-          final id = state.pathParameters['id'];
-          final product = dummyProducts.firstWhere((p) => p.id == id, orElse: () => dummyProducts.first);
-          return ProductDetailScreen(product: product);
+          final id = state.pathParameters['id']!;
+          return ProductDetailScreen(productId: id);
         },
       ),
       GoRoute(
