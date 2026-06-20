@@ -81,38 +81,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _buildAutoSlider(context),
                   const _HomepagePromoBanner(),
-                  _buildSectionTitle(
-                    context,
-                    'Best Offers',
-                    'Handpicked deals just for you',
-                  ),
-                  const SizedBox(height: 30),
+                  _buildSectionTitle(context, 'Best Offers'),
+                  const SizedBox(height: 16),
                   _buildBestOffersSection(context),
                   if (_newArrivalProducts.isNotEmpty) ...[
                     const SizedBox(height: 60),
-                    _buildSectionTitle(
-                      context,
-                      'New Arrivals',
-                      'Fresh picks just added to Hello Homes',
-                    ),
-                    const SizedBox(height: 30),
+                    _buildSectionTitle(context, 'New Arrivals'),
+                    const SizedBox(height: 16),
                     _buildHorizontalProductSlider(context, _newArrivalProducts),
                   ],
                   const SizedBox(height: 60),
-                  _buildSectionTitle(
-                    context,
-                    'Top Categories',
-                    'Curated essentials for every room',
-                  ),
-                  const SizedBox(height: 30),
+                  _buildSectionTitle(context, 'Top Categories', viewAllRoute: '/categories'),
+                  const SizedBox(height: 16),
                   _buildCategoryGrid(context),
                   const SizedBox(height: 60),
-                  _buildSectionTitle(
-                    context,
-                    'Featured Products',
-                    'Most popular items this week',
-                  ),
-                  const SizedBox(height: 30),
+                  _buildSectionTitle(context, 'Featured Products'),
+                  const SizedBox(height: 16),
                   _buildHorizontalProductSlider(context, _products),
                   const SizedBox(height: 80),
                   const GlobalFooter(),
@@ -200,56 +184,41 @@ class _HomeScreenState extends State<HomeScreen> {
     return const _HeroAutoSlider();
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title, String subtitle) {
+  Widget _buildSectionTitle(
+    BuildContext context,
+    String title, {
+    String viewAllRoute = '/products',
+  }) {
     final isMobile = MediaQuery.of(context).size.width < 800;
+    final titleStyle = isMobile
+        ? Theme.of(context).textTheme.headlineMedium
+        : Theme.of(context).textTheme.displaySmall;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: isMobile 
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 4),
-              Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted)),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => context.go('/categories'),
-                style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('View All'),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_ios, size: 14),
-                  ],
-                ),
-              )
-            ],
-          )
-        : Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.displaySmall),
-                  const SizedBox(height: 8),
-                  Text(subtitle, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.textMuted)),
-                ],
-              ),
-              TextButton(
-                onPressed: () => context.go('/products'),
-                child: const Row(
-                  children: [
-                    Text('View All'),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_ios, size: 14),
-                  ],
-                ),
-              )
-            ],
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: Text(title, style: titleStyle)),
+          TextButton(
+            onPressed: () => context.go(viewAllRoute),
+            style: TextButton.styleFrom(
+              padding: isMobile ? EdgeInsets.zero : null,
+              minimumSize: isMobile ? Size.zero : null,
+              tapTargetSize: isMobile ? MaterialTapTargetSize.shrinkWrap : null,
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('View All'),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward_ios, size: 14),
+              ],
+            ),
           ),
+        ],
+      ),
     );
   }
 
@@ -680,8 +649,6 @@ class _CategoryCardState extends State<_CategoryCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hasSubtitle = widget.category.subtitle.trim().isNotEmpty;
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -786,25 +753,7 @@ class _CategoryCardState extends State<_CategoryCard> {
                               ),
                         ),
                       ),
-                      if (hasSubtitle) ...[
-                        const SizedBox(height: 8),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 210),
-                          child: Text(
-                            widget.category.subtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white.withAlpha(226),
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
-                          ),
-                        ),
-                      ],
+
                       const Spacer(),
                       Align(
                         alignment: Alignment.bottomRight,

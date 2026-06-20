@@ -22,9 +22,8 @@ a { color: inherit; text-decoration:none; }
 .hh-tile b { font-size:1.3rem; }
 .hh-tile span { color:inherit; opacity:.78; margin-top:.35rem; }
 .hh-section { padding:1rem clamp(1rem, 4vw, 4rem) 4rem; }
-.hh-section-head { display:flex; justify-content:space-between; align-items:end; gap:1rem; margin-bottom:1.5rem; }
+.hh-section-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
 .hh-section h2 { margin:0; font-size:clamp(1.8rem, 3vw, 3rem); letter-spacing:-.04em; }
-.hh-section-head p { color:var(--muted); margin:.35rem 0 0; }
 .hh-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.25rem; }
 .hh-card { background:var(--card); border:1px solid rgba(31,111,74,.1); border-radius:1.5rem; padding:1rem; min-height:15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 14px 30px rgba(31,42,37,.06); }
 .hh-art { height:8rem; border-radius:1.1rem; background:radial-gradient(circle at 30% 30%, #fff 0 16%, transparent 17%), linear-gradient(135deg,#ead9b7,#f8efe0); }
