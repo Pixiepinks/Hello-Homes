@@ -214,14 +214,16 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
                     Positioned(
                       top: widget.triggerHeight,
                       left: 36,
-                      right: 36,
                       child: FutureBuilder<List<Category>>(
                         future: CategoryTreeRepository.load(),
                         builder: (context, snapshot) {
                           final categories = snapshot.data ?? const <Category>[];
                           final active = _activeCategory(categories);
+                          final showMegaPanel = active != null;
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            width: showMegaPanel ? MediaQuery.of(context).size.width - 72 : 280,
                             height: _menuHeight,
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -237,6 +239,7 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
                             child: snapshot.connectionState == ConnectionState.waiting
                                 ? const Center(child: CircularProgressIndicator())
                                 : Row(
+                                    mainAxisSize: showMegaPanel ? MainAxisSize.max : MainAxisSize.min,
                                     children: [
                                       SizedBox(
                                         width: 280,
@@ -292,12 +295,12 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
                                           },
                                         ),
                                       ),
-                                      const VerticalDivider(width: 1),
-                                      Expanded(
-                                        child: active == null
-                                            ? const _DesktopMegaMenuBlankState()
-                                            : _DesktopSubcategoryGrid(category: active, onClose: widget.onClose),
-                                      ),
+                                      if (showMegaPanel) ...[
+                                        const VerticalDivider(width: 1),
+                                        Expanded(
+                                          child: _DesktopSubcategoryGrid(category: active, onClose: widget.onClose),
+                                        ),
+                                      ],
                                     ],
                                   ),
                           );
@@ -309,24 +312,6 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DesktopMegaMenuBlankState extends StatelessWidget {
-  const _DesktopMegaMenuBlankState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Hover a category to view subcategories',
-        style: TextStyle(
-          color: AppTheme.textMuted,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );
