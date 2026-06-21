@@ -31,24 +31,20 @@ class MobileBottomNavigation extends StatelessWidget {
     final bottomInset = mediaQuery.padding.bottom;
     final currentPath = _currentPath(context);
 
-    return Align(
-      alignment: Alignment.bottomCenter,
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: barHeight + bottomInset,
       child: Material(
-        color: Colors.transparent,
-        child: Container(
-          height: barHeight + bottomInset,
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceWhite,
-            border: const Border(
+        color: AppTheme.surfaceWhite,
+        elevation: 10,
+        shadowColor: Colors.black.withAlpha(18),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            border: Border(
               top: BorderSide(color: AppTheme.borderLight, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(18),
-                blurRadius: 22,
-                offset: const Offset(0, -8),
-              ),
-            ],
           ),
           child: SafeArea(
             top: false,
@@ -112,11 +108,7 @@ class MobileBottomNavigation extends StatelessWidget {
   }
 
   String _currentPath(BuildContext context) {
-    try {
-      return GoRouterState.of(context).uri.path;
-    } catch (_) {
-      return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
-    }
+    return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
   }
 
   Future<void> _openWhatsApp() async {
