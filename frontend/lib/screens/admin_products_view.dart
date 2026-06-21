@@ -37,6 +37,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   bool _isOnSale = false;
   int? _selectedDeliveryOptionId;
   int? _selectedCategoryId;
+  int? _selectedSubcategoryId;
   final _weightController = TextEditingController(text: '1.0');
   List<dynamic> _deliveryOptions = [];
   bool _isLoadingOptions = true;
@@ -59,6 +60,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   final int _perPage = 10;
   
   List<dynamic> _categories = [];
+  List<dynamic> _subcategories = [];
 
   @override
   void initState() {
@@ -74,6 +76,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       if (response.statusCode == 200) {
         setState(() {
           _categories = json.decode(response.body);
+          _refreshSubcategoriesForSelectedCategory();
         });
       }
     } catch (e) {
@@ -181,6 +184,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
         'delivery_option_id': _selectedDeliveryOptionId,
         'weight': double.tryParse(_weightController.text) ?? 1.0,
         'category_id': _selectedCategoryId,
+        'subcategory_id': _selectedSubcategoryId,
       });
 
       final token = context.read<AuthProvider>().token;
@@ -278,6 +282,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       _isUploadingMainImage = false;
       _isUploadingAdditionalImages = false;
       _selectedCategoryId = null;
+      _selectedSubcategoryId = null;
+      _subcategories = [];
       if (_deliveryOptions.isNotEmpty) {
         final standard = _deliveryOptions.firstWhere((o) => o['type'] == 'weight_based', orElse: () => _deliveryOptions.first);
         _selectedDeliveryOptionId = standard['id'];
@@ -393,6 +399,35 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     );
   }
 
+
+  void _refreshSubcategoriesForSelectedCategory() {
+    if (_selectedCategoryId == null) {
+      _subcategories = [];
+      _selectedSubcategoryId = null;
+      return;
+    }
+
+    final category = _categories.cast<dynamic>().firstWhere(
+      (c) => int.tryParse(c['id'].toString()) == _selectedCategoryId,
+      orElse: () => null,
+    );
+    final subcategories = category is Map && category['subcategories'] is List
+        ? (category['subcategories'] as List).where((sub) => sub['is_active'] == 1 || sub['is_active'] == true).toList()
+        : <dynamic>[];
+    _subcategories = subcategories;
+    if (_selectedSubcategoryId != null && !_subcategories.any((sub) => int.tryParse(sub['id'].toString()) == _selectedSubcategoryId)) {
+      _selectedSubcategoryId = null;
+    }
+  }
+
+  void _selectCategory(int? categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _selectedSubcategoryId = null;
+      _refreshSubcategoriesForSelectedCategory();
+    });
+  }
+
   void _populateForm(Product product) {
     _editingProduct = product;
     _titleController.text = product.title;
@@ -406,6 +441,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     _isOnSale = product.isOnSale;
     _selectedDeliveryOptionId = product.deliveryOptionId;
     _selectedCategoryId = product.categoryId;
+    _selectedSubcategoryId = product.subcategoryId;
+    _refreshSubcategoriesForSelectedCategory();
     _weightController.text = product.weight.toString();
 
     String specsText = '';
@@ -516,7 +553,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                           decoration: const InputDecoration(labelText: 'Category', contentPadding: EdgeInsets.symmetric(horizontal: 10)),
                           items: [
                             const DropdownMenuItem<int>(value: null, child: Text('All Categories', overflow: TextOverflow.ellipsis)),
-                            ..._categories.map((c) => DropdownMenuItem<int>(value: c['id'], child: Text(c['title']?.toString() ?? 'Unnamed Category', overflow: TextOverflow.ellipsis))),
+                            ..._categories.map((c) => DropdownMenuItem<int>(value: int.tryParse(c['id'].toString()), child: Text(c['title']?.toString() ?? 'Unnamed Category', overflow: TextOverflow.ellipsis))),
                           ],
                           onChanged: (v) {
                             setState(() => _filterCategoryId = v);
@@ -604,7 +641,10 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                                 children: [
                                   Text(formatPrice(product.price)),
                                   if (product.categoryName.isNotEmpty)
-                                    Text(product.categoryName, style: TextStyle(color: AppTheme.primaryBlue.withOpacity(0.7), fontSize: 12)),
+                                    Text(
+                                      product.subcategoryName.isEmpty ? product.categoryName : '${product.categoryName} • ${product.subcategoryName}',
+                                      style: TextStyle(color: AppTheme.primaryBlue.withOpacity(0.7), fontSize: 12),
+                                    ),
                                 ],
                               ),
                               trailing: Row(
@@ -881,9 +921,25 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 decoration: const InputDecoration(labelText: 'Product Category'),
                 items: [
                   const DropdownMenuItem<int>(value: null, child: Text('No Category', overflow: TextOverflow.ellipsis)),
-                  ..._categories.map((c) => DropdownMenuItem<int>(value: c['id'], child: Text(c['title']?.toString() ?? 'Unnamed Category', overflow: TextOverflow.ellipsis))),
+                  ..._categories.map((c) => DropdownMenuItem<int>(value: int.tryParse(c['id'].toString()), child: Text(c['title']?.toString() ?? 'Unnamed Category', overflow: TextOverflow.ellipsis))),
                 ],
-                onChanged: (v) => setState(() => _selectedCategoryId = v),
+                onChanged: _selectCategory,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                isExpanded: true,
+                value: _selectedSubcategoryId,
+                decoration: const InputDecoration(labelText: 'Product Subcategory'),
+                items: _subcategories.isEmpty
+                    ? [const DropdownMenuItem<int>(value: null, child: Text('No subcategories available'))]
+                    : [
+                        const DropdownMenuItem<int>(value: null, child: Text('No Subcategory', overflow: TextOverflow.ellipsis)),
+                        ..._subcategories.map((s) => DropdownMenuItem<int>(
+                              value: int.tryParse(s['id'].toString()),
+                              child: Text(s['name']?.toString() ?? 'Unnamed Subcategory', overflow: TextOverflow.ellipsis),
+                            )),
+                      ],
+                onChanged: _subcategories.isEmpty ? null : (v) => setState(() => _selectedSubcategoryId = v),
               ),
               const SizedBox(height: 16),
               _buildAdditionalImagesUploader(),

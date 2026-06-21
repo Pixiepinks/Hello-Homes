@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\UiSettingController;
 use App\Http\Controllers\Api\HeroBannerController;
 use App\Http\Controllers\Api\PromotionBannerController;
 use App\Http\Controllers\Api\PaymentSettingController;
+use App\Http\Controllers\Api\SubcategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +27,8 @@ use App\Http\Controllers\Api\PaymentSettingController;
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/subcategories', [SubcategoryController::class, 'index']);
+Route::get('/subcategories/{id}', [SubcategoryController::class, 'show'])->whereNumber('id');
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{id}', [OrderController::class, 'show'])->whereNumber('id');
 Route::post('/orders/{id}/upload-slip', [OrderController::class, 'uploadSlip']);
@@ -56,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Admin Resources
         Route::apiResource('categories', CategoryController::class)->except(['index']);
+        Route::apiResource('subcategories', SubcategoryController::class)->except(['index', 'show']);
         Route::apiResource('customers', CustomerController::class);
 
         // Admin Order Routes

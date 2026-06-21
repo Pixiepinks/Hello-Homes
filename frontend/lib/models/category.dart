@@ -1,14 +1,46 @@
+
+class Subcategory {
+  final String id;
+  final int categoryId;
+  final String name;
+  final String imageUrl;
+  final bool isActive;
+  final int sortOrder;
+
+  Subcategory({
+    required this.id,
+    required this.categoryId,
+    required this.name,
+    this.imageUrl = '',
+    this.isActive = true,
+    this.sortOrder = 0,
+  });
+
+  factory Subcategory.fromJson(Map<String, dynamic> json) {
+    return Subcategory(
+      id: json['id'].toString(),
+      categoryId: int.tryParse(json['category_id']?.toString() ?? '') ?? 0,
+      name: json['name']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString() ?? '',
+      isActive: json['is_active'] == 1 || json['is_active'] == true,
+      sortOrder: int.tryParse(json['sort_order']?.toString() ?? '0') ?? 0,
+    );
+  }
+}
+
 class Category {
   final String id;
   final String title;
   final String subtitle;
   final String imageUrl;
+  final List<Subcategory> subcategories;
 
   Category({
     required this.id,
     required this.title,
     required this.subtitle,
     required this.imageUrl,
+    this.subcategories = const [],
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -17,6 +49,9 @@ class Category {
       title: json['title'],
       subtitle: json['subtitle'] ?? '',
       imageUrl: json['image_url'] ?? '',
+      subcategories: json['subcategories'] is List
+          ? (json['subcategories'] as List).map((item) => Subcategory.fromJson(item)).toList()
+          : const [],
     );
   }
 }
