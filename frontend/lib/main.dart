@@ -18,6 +18,7 @@ import 'screens/all_categories_screen.dart';
 import 'screens/all_products_screen.dart';
 import 'screens/upload_slip_screen.dart';
 import 'widgets/cookie_consent_banner.dart';
+import 'widgets/mobile_bottom_navigation.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -90,6 +91,10 @@ GoRouter _buildRouter(AuthProvider authProvider) {
         builder: (context, state) => const AllProductsScreen(),
       ),
       GoRoute(
+        path: '/offers',
+        builder: (context, state) => const AllProductsScreen(offersOnly: true),
+      ),
+      GoRoute(
         path: '/categories',
         builder: (context, state) => const AllCategoriesScreen(),
       ),
@@ -147,10 +152,17 @@ class _HelloHomesAppState extends State<HelloHomesApp> {
         theme: AppTheme.lightTheme,
         routerConfig: _router,
         builder: (context, child) {
+          final mobileBottomPadding =
+              MobileBottomNavigation.reservedBottomPadding(context);
+
           return Stack(
             children: [
-              child!,
+              Padding(
+                padding: EdgeInsets.only(bottom: mobileBottomPadding),
+                child: child!,
+              ),
               const CookieConsentBanner(),
+              const MobileBottomNavigation(),
             ],
           );
         },
