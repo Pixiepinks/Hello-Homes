@@ -152,12 +152,13 @@ class _HelloHomesAppState extends State<HelloHomesApp> {
         theme: AppTheme.lightTheme,
         routerConfig: _router,
         builder: (context, child) {
-          return Column(
-            children: [
-              Expanded(child: child ?? const SizedBox.shrink()),
-              const CookieConsentBanner(),
-              const MobileBottomNavigation(),
-            ],
+          return MobileNavigationShell(
+            child: Column(
+              children: [
+                Expanded(child: child ?? const SizedBox.shrink()),
+                const CookieConsentBanner(),
+              ],
+            ),
           );
         },
       ),
