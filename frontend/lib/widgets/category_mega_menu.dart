@@ -175,7 +175,18 @@ class _DesktopCategoryMegaMenu extends StatefulWidget {
 
 class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
   static const double _menuHeight = 480;
-  int _active = 0;
+  String? _activeCategoryId;
+
+  Category? _activeCategory(List<Category> categories) {
+    final activeCategoryId = _activeCategoryId;
+    if (activeCategoryId == null) return null;
+
+    for (final category in categories) {
+      if (category.id == activeCategoryId) return category;
+    }
+
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,9 +219,7 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
                         future: CategoryTreeRepository.load(),
                         builder: (context, snapshot) {
                           final categories = snapshot.data ?? const <Category>[];
-                          final active = categories.isNotEmpty
-                              ? categories[_active.clamp(0, categories.length - 1).toInt()]
-                              : null;
+                          final active = _activeCategory(categories);
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
                             height: _menuHeight,
@@ -235,11 +244,13 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
                                           padding: const EdgeInsets.symmetric(vertical: 12),
                                           itemCount: categories.length,
                                           itemBuilder: (_, i) {
-                                            final selected = i == _active;
                                             final category = categories[i];
+                                            final selected = category.id == _activeCategoryId;
                                             return InkWell(
                                               onHover: (hovering) {
-                                                if (hovering && _active != i) setState(() => _active = i);
+                                                if (hovering && _activeCategoryId != category.id) {
+                                                  setState(() => _activeCategoryId = category.id);
+                                                }
                                               },
                                               onTap: () {
                                                 widget.onClose();
@@ -284,7 +295,7 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
                                       const VerticalDivider(width: 1),
                                       Expanded(
                                         child: active == null
-                                            ? const SizedBox.shrink()
+                                            ? const _DesktopMegaMenuBlankState()
                                             : _DesktopSubcategoryGrid(category: active, onClose: widget.onClose),
                                       ),
                                     ],
@@ -298,6 +309,24 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopMegaMenuBlankState extends StatelessWidget {
+  const _DesktopMegaMenuBlankState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Hover a category to view subcategories',
+        style: TextStyle(
+          color: AppTheme.textMuted,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
