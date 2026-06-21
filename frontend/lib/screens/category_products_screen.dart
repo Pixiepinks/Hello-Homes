@@ -27,17 +27,24 @@ class CategoryProductsScreen extends StatefulWidget {
 
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   List<Product> _products = [];
+  List<Subcategory> _subcategories = [];
+  String? _selectedSubcategoryId;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _fetchSubcategories();
     _fetchCategoryProducts();
   }
 
   Future<void> _fetchCategoryProducts() async {
     try {
-      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/products?category_id=${widget.categoryId}&all=1'));
+      var url = '${AppConstants.apiUrl}/products?category_id=${widget.categoryId}&all=1';
+      if (_selectedSubcategoryId != null) {
+        url += '&subcategory_id=$_selectedSubcategoryId';
+      }
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
@@ -52,6 +59,29 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     }
   }
 
+
+  Future<void> _fetchSubcategories() async {
+    try {
+      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/subcategories?category_id=${widget.categoryId}&active=1'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _subcategories = data.map((item) => Subcategory.fromJson(item)).toList();
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _selectSubcategory(String? subcategoryId) {
+    setState(() {
+      _selectedSubcategoryId = subcategoryId;
+      _isLoading = true;
+    });
+    _fetchCategoryProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,6 +94,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         child: Column(
           children: [
             _buildHeader(context),
+            const SizedBox(height: 24),
+            _buildSubcategoryFilters(),
             const SizedBox(height: 40),
             _products.isEmpty
               ? _buildEmptyState()
@@ -90,6 +122,32 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             widget.categoryTitle,
             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildSubcategoryFilters() {
+    if (_subcategories.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: [
+          ChoiceChip(
+            label: const Text('All'),
+            selected: _selectedSubcategoryId == null,
+            onSelected: (_) => _selectSubcategory(null),
+          ),
+          ..._subcategories.map((subcategory) => ChoiceChip(
+                label: Text(subcategory.name),
+                selected: _selectedSubcategoryId == subcategory.id,
+                onSelected: (_) => _selectSubcategory(subcategory.id),
+              )),
         ],
       ),
     );

@@ -11,14 +11,13 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        return response()->json(Category::all());
+        return response()->json(Category::with('subcategories')->get());
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'subtitle' => 'nullable|string',
             'image_url' => 'nullable|string',
         ]);
 
@@ -41,7 +40,6 @@ class CategoryController extends Controller
         
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'subtitle' => 'nullable|string',
             'image_url' => 'nullable|string',
         ]);
 

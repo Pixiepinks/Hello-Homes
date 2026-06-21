@@ -17,6 +17,8 @@ class Product {
   final double weight;
   final int? categoryId;
   final String categoryName;
+  final int? subcategoryId;
+  final String subcategoryName;
 
   Product({
     required this.id,
@@ -35,6 +37,8 @@ class Product {
     this.weight = 1.0,
     this.categoryId,
     this.categoryName = '',
+    this.subcategoryId,
+    this.subcategoryName = '',
   });
 
   List<String> get galleryImages {
@@ -96,6 +100,10 @@ class Product {
       categoryId: json['category_id'] != null ? int.tryParse(json['category_id'].toString()) : null,
       categoryName: (json['category'] != null && json['category'] is Map) 
           ? (json['category']['title']?.toString() ?? '') 
+          : '',
+      subcategoryId: json['subcategory_id'] != null ? int.tryParse(json['subcategory_id'].toString()) : null,
+      subcategoryName: (json['subcategory'] != null && json['subcategory'] is Map)
+          ? (json['subcategory']['name']?.toString() ?? '')
           : '',
     );
   }

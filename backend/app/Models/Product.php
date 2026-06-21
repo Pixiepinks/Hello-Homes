@@ -18,11 +18,17 @@ class Product extends Model
         'price' => 'float',
         'original_price' => 'float',
         'weight' => 'float',
+        'subcategory_id' => 'integer',
     ];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function subcategory()
+    {
+        return $this->belongsTo(Subcategory::class);
     }
 
     public function deliveryOption()
