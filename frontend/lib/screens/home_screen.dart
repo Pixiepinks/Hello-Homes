@@ -616,25 +616,21 @@ class _ExistingHomepageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, isMobile ? 4 : 6, 24, isMobile ? 18 : 24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: AspectRatio(
-          aspectRatio: isMobile ? 16 / 6 : 1920 / 360,
-          child: Image.asset(
-            'assets/images/home-banner.png',
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: AppTheme.backgroundLight,
-              alignment: Alignment.center,
-              child: Text(
-                'Homepage banner unavailable',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+
+    return SizedBox(
+      width: viewportWidth,
+      child: Image.asset(
+        'assets/images/home-banner.png',
+        width: viewportWidth,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: viewportWidth,
+          color: AppTheme.backgroundLight,
+          alignment: Alignment.center,
+          child: Text(
+            'Homepage banner unavailable',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
       ),
