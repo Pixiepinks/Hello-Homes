@@ -18,7 +18,6 @@ import 'screens/all_categories_screen.dart';
 import 'screens/all_products_screen.dart';
 import 'screens/upload_slip_screen.dart';
 import 'widgets/cookie_consent_banner.dart';
-import 'widgets/mobile_bottom_navigation.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -152,13 +151,14 @@ class _HelloHomesAppState extends State<HelloHomesApp> {
         theme: AppTheme.lightTheme,
         routerConfig: _router,
         builder: (context, child) {
-          return MobileNavigationShell(
-            child: Column(
-              children: [
-                Expanded(child: child ?? const SizedBox.shrink()),
-                const CookieConsentBanner(),
-              ],
-            ),
+          return Stack(
+            children: [
+              child ?? const SizedBox.shrink(),
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: CookieConsentBanner(),
+              ),
+            ],
           );
         },
       ),

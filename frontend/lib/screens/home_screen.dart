@@ -9,6 +9,7 @@ import '../models/category.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
+import '../widgets/mobile_bottom_navigation.dart';
 import '../theme/app_theme.dart';
 import '../models/ui_settings.dart';
 import '../providers/ui_settings_provider.dart';
@@ -74,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: const GlobalAppBar(),
       drawer: const GlobalDrawer(),
+      bottomNavigationBar: buildMobileBottomNavigationBar(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
