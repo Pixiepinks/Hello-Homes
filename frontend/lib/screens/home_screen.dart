@@ -317,6 +317,8 @@ class _ProductCarouselState extends State<_ProductCarousel> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final uiSettings = context.watch<UiSettingsProvider>().settings;
+        final showCarouselArrows =
+            uiSettings.showCarouselArrows && constraints.maxWidth >= 800;
         final visibleItems = getProductCrossAxisCount(constraints.maxWidth, desktopCount: uiSettings.productsPerRowDesktop);
         final itemWidth = getProductCarouselItemWidth(constraints.maxWidth, desktopCount: uiSettings.productsPerRowDesktop);
         final spacing = visibleItems == 2 ? 12.0 : (constraints.maxWidth >= 900 ? 12.0 : 14.0);
@@ -345,13 +347,13 @@ class _ProductCarouselState extends State<_ProductCarousel> {
                   );
                 },
               ),
-              if (uiSettings.showCarouselArrows && _canScrollBack)
+              if (showCarouselArrows && _canScrollBack)
                 _CarouselArrowButton(
                   alignment: Alignment.centerLeft,
                   icon: Icons.chevron_left,
                   onPressed: () => _scrollBy(-scrollDistance),
                 ),
-              if (uiSettings.showCarouselArrows && _canScrollForward)
+              if (showCarouselArrows && _canScrollForward)
                 _CarouselArrowButton(
                   alignment: Alignment.centerRight,
                   icon: Icons.chevron_right,
@@ -378,31 +380,28 @@ class _CarouselArrowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        ignoring: false,
-        child: Align(
-          alignment: alignment,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Material(
-              color: Colors.white,
-              elevation: 8,
-              shadowColor: Colors.black.withAlpha(31),
-              borderRadius: BorderRadius.circular(999),
-              child: InkWell(
-                onTap: onPressed,
-                customBorder: const CircleBorder(),
-                hoverColor: AppTheme.primaryBlue.withAlpha(20),
-                child: SizedBox(
-                  width: 46,
-                  height: 46,
-                  child: Icon(
-                    icon,
-                    size: 30,
-                    color: AppTheme.primaryBlue,
-                  ),
-                ),
+    return Positioned(
+      left: alignment == Alignment.centerLeft ? 8 : null,
+      right: alignment == Alignment.centerRight ? 8 : null,
+      top: 0,
+      bottom: 0,
+      child: Center(
+        child: Material(
+          color: Colors.white,
+          elevation: 8,
+          shadowColor: Colors.black.withAlpha(31),
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const CircleBorder(),
+            hoverColor: AppTheme.primaryBlue.withAlpha(20),
+            child: SizedBox(
+              width: 46,
+              height: 46,
+              child: Icon(
+                icon,
+                size: 30,
+                color: AppTheme.primaryBlue,
               ),
             ),
           ),
