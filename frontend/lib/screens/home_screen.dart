@@ -524,19 +524,24 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
                   bottom: isMobile ? 10 : 24,
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 12 : 20,
-                      vertical: isMobile ? 6 : 11,
+                      horizontal: isMobile ? 8 : 20,
+                      vertical: isMobile ? 3 : 11,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentOrange,
-                      borderRadius: BorderRadius.circular(isMobile ? 18 : 999),
+                      color:
+                          isMobile ? Colors.transparent : AppTheme.accentOrange,
+                      borderRadius: BorderRadius.circular(isMobile ? 14 : 999),
+                      border:
+                          isMobile ? Border.all(color: Colors.white) : null,
                     ),
                     child: Text(
                       'Buy Now',
-                      style: (isMobile ? Theme.of(context).textTheme.labelSmall : Theme.of(context).textTheme.labelLarge)
+                      style: (isMobile
+                              ? Theme.of(context).textTheme.labelSmall
+                              : Theme.of(context).textTheme.labelLarge)
                           ?.copyWith(
                         color: Colors.white,
-                        fontSize: isMobile ? 12 : null,
+                        fontSize: isMobile ? 10 : null,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -564,12 +569,12 @@ class _CountdownOverlay extends StatelessWidget {
     final seconds = remaining.inSeconds.remainder(60);
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 14,
-        vertical: compact ? 4 : 14,
+        horizontal: compact ? 3 : 14,
+        vertical: compact ? 2 : 14,
       ),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(150),
-        borderRadius: BorderRadius.circular(compact ? 12 : 16),
+        borderRadius: BorderRadius.circular(compact ? 8 : 16),
         border: Border.all(color: Colors.white24),
       ),
       child: Row(
@@ -585,13 +590,13 @@ class _CountdownOverlay extends StatelessWidget {
   }
 
   Widget _timeBox(BuildContext context, int value, String label) => Padding(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 7),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 1.5 : 7),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(
             value.toString().padLeft(2, '0'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.white,
-                  fontSize: compact ? 13 : null,
+                  fontSize: compact ? 10 : null,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -599,7 +604,7 @@ class _CountdownOverlay extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Colors.white70,
-                  fontSize: compact ? 9 : null,
+                  fontSize: compact ? 7 : null,
                 ),
           ),
         ]),
