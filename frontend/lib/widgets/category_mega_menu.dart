@@ -57,18 +57,31 @@ class AllCategoriesMenuButton extends StatefulWidget {
 
 class _AllCategoriesMenuButtonState extends State<AllCategoriesMenuButton> {
   OverlayEntry? _overlay;
+  Timer? _closeTimer;
   bool _open = false;
 
-  void _toggle() => _open ? _close() : _openDesktop();
+  void _cancelCloseTimer() {
+    _closeTimer?.cancel();
+    _closeTimer = null;
+  }
+
+  void _scheduleClose() {
+    _cancelCloseTimer();
+    _closeTimer = Timer(const Duration(milliseconds: 200), _close);
+  }
 
   void _openDesktop() {
+    _cancelCloseTimer();
     if (_overlay != null) return;
     final box = context.findRenderObject() as RenderBox;
     final position = box.localToGlobal(Offset.zero);
     _overlay = OverlayEntry(
       builder: (_) => _DesktopCategoryMegaMenu(
-        top: position.dy + box.size.height,
+        triggerTop: position.dy,
+        triggerHeight: box.size.height,
         onClose: _close,
+        onEnter: _cancelCloseTimer,
+        onExit: _scheduleClose,
       ),
     );
     Overlay.of(context).insert(_overlay!);
@@ -76,12 +89,14 @@ class _AllCategoriesMenuButtonState extends State<AllCategoriesMenuButton> {
   }
 
   void _close() {
+    _cancelCloseTimer();
     _overlay?.remove();
     _overlay = null;
     if (mounted) setState(() => _open = false);
   }
 
   void _removeOverlay() {
+    _cancelCloseTimer();
     _overlay?.remove();
     _overlay = null;
   }
@@ -105,15 +120,23 @@ class _AllCategoriesMenuButtonState extends State<AllCategoriesMenuButton> {
   }
 
   @override
-  void dispose() { _removeOverlay(); super.dispose(); }
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
     return MouseRegion(
-      onEnter: (_) { if (!isMobile) _openDesktop(); },
+      onEnter: (_) {
+        if (!isMobile) _openDesktop();
+      },
+      onExit: (_) {
+        if (!isMobile) _scheduleClose();
+      },
       child: InkWell(
-        onTap: isMobile ? _openMobile : _toggle,
+        onTap: isMobile ? _openMobile : _openDesktop,
         child: Container(
           height: double.infinity,
           padding: EdgeInsets.symmetric(horizontal: isMobile ? 14 : 12),
@@ -132,15 +155,26 @@ class _AllCategoriesMenuButtonState extends State<AllCategoriesMenuButton> {
 }
 
 class _DesktopCategoryMegaMenu extends StatefulWidget {
-  final double top;
+  final double triggerTop;
+  final double triggerHeight;
   final VoidCallback onClose;
-  const _DesktopCategoryMegaMenu({required this.top, required this.onClose});
+  final VoidCallback onEnter;
+  final VoidCallback onExit;
+
+  const _DesktopCategoryMegaMenu({
+    required this.triggerTop,
+    required this.triggerHeight,
+    required this.onClose,
+    required this.onEnter,
+    required this.onExit,
+  });
 
   @override
   State<_DesktopCategoryMegaMenu> createState() => _DesktopCategoryMegaMenuState();
 }
 
 class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
+  static const double _menuHeight = 480;
   int _active = 0;
 
   @override
@@ -148,61 +182,123 @@ class _DesktopCategoryMegaMenuState extends State<_DesktopCategoryMegaMenu> {
     return Positioned.fill(
       child: Material(
         color: Colors.transparent,
-        child: Stack(children: [
-          Positioned.fill(child: GestureDetector(onTap: widget.onClose, child: Container(color: Colors.transparent))),
-          Positioned(
-            top: widget.top,
-            left: 36,
-            right: 36,
-            child: MouseRegion(
-              onExit: (_) => widget.onClose(),
-              child: FutureBuilder<List<Category>>(
-                future: CategoryTreeRepository.load(),
-                builder: (context, snapshot) {
-                  final categories = snapshot.data ?? const <Category>[];
-                  final active = categories.isNotEmpty ? categories[_active.clamp(0, categories.length - 1).toInt()] : null;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    height: 480,
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withAlpha(35), blurRadius: 28, offset: const Offset(0, 14))]),
-                    child: snapshot.connectionState == ConnectionState.waiting
-                        ? const Center(child: CircularProgressIndicator())
-                        : Row(children: [
-                            SizedBox(
-                              width: 280,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                itemCount: categories.length,
-                                itemBuilder: (_, i) {
-                                  final selected = i == _active;
-                                  final category = categories[i];
-                                  return InkWell(
-                                    onHover: (_) => setState(() => _active = i),
-                                    onTap: () { widget.onClose(); context.go(_categoryUrl(category)); },
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                      decoration: BoxDecoration(color: selected ? AppTheme.primaryBlue.withAlpha(18) : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                                      child: Row(children: [
-                                        Icon(Icons.home_work_outlined, size: 20, color: selected ? AppTheme.accentOrange : AppTheme.primaryBlue),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: Text(category.title, style: TextStyle(fontWeight: FontWeight.w700, color: selected ? AppTheme.primaryBlue : AppTheme.darkBlue))),
-                                        Icon(Icons.chevron_right, size: 18, color: selected ? AppTheme.accentOrange : Colors.black38),
-                                      ]),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const VerticalDivider(width: 1),
-                            Expanded(child: active == null ? const SizedBox.shrink() : _DesktopSubcategoryGrid(category: active, onClose: widget.onClose)),
-                          ]),
-                  );
-                },
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: widget.onClose,
+                child: Container(color: Colors.transparent),
               ),
             ),
-          ),
-        ]),
+            Positioned(
+              top: widget.triggerTop,
+              left: 0,
+              right: 0,
+              height: widget.triggerHeight + _menuHeight,
+              child: MouseRegion(
+                onEnter: (_) => widget.onEnter(),
+                onExit: (_) => widget.onExit(),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: widget.triggerHeight,
+                      left: 36,
+                      right: 36,
+                      child: FutureBuilder<List<Category>>(
+                        future: CategoryTreeRepository.load(),
+                        builder: (context, snapshot) {
+                          final categories = snapshot.data ?? const <Category>[];
+                          final active = categories.isNotEmpty
+                              ? categories[_active.clamp(0, categories.length - 1).toInt()]
+                              : null;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            height: _menuHeight,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(35),
+                                  blurRadius: 28,
+                                  offset: const Offset(0, 14),
+                                ),
+                              ],
+                            ),
+                            child: snapshot.connectionState == ConnectionState.waiting
+                                ? const Center(child: CircularProgressIndicator())
+                                : Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 280,
+                                        child: ListView.builder(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          itemCount: categories.length,
+                                          itemBuilder: (_, i) {
+                                            final selected = i == _active;
+                                            final category = categories[i];
+                                            return InkWell(
+                                              onHover: (hovering) {
+                                                if (hovering && _active != i) setState(() => _active = i);
+                                              },
+                                              onTap: () {
+                                                widget.onClose();
+                                                context.go(_categoryUrl(category));
+                                              },
+                                              child: Container(
+                                                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  color: selected ? AppTheme.primaryBlue.withAlpha(18) : Colors.transparent,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.home_work_outlined,
+                                                      size: 20,
+                                                      color: selected ? AppTheme.accentOrange : AppTheme.primaryBlue,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        category.title,
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.w700,
+                                                          color: selected ? AppTheme.primaryBlue : AppTheme.darkBlue,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons.chevron_right,
+                                                      size: 18,
+                                                      color: selected ? AppTheme.accentOrange : Colors.black38,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const VerticalDivider(width: 1),
+                                      Expanded(
+                                        child: active == null
+                                            ? const SizedBox.shrink()
+                                            : _DesktopSubcategoryGrid(category: active, onClose: widget.onClose),
+                                      ),
+                                    ],
+                                  ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
