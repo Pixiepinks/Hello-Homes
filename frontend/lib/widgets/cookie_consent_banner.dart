@@ -38,37 +38,33 @@ class _CookieConsentBannerState extends State<CookieConsentBanner> {
 
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Material(
-        elevation: 20,
-        child: Container(
-          color: AppTheme.darkBlue,
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 20 : 40,
-            vertical: 24,
-          ),
-          child: SafeArea(
-            top: false,
-            child: isMobile 
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildMessage(),
-                    const SizedBox(height: 20),
-                    _buildButtons(),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Expanded(child: _buildMessage()),
-                    const SizedBox(width: 40),
-                    _buildButtons(),
-                  ],
-                ),
-          ),
+    return Material(
+      elevation: 20,
+      child: Container(
+        width: double.infinity,
+        color: AppTheme.darkBlue,
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 20 : 40,
+          vertical: 24,
+        ),
+        child: SafeArea(
+          top: false,
+          child: isMobile
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildMessage(),
+                  const SizedBox(height: 20),
+                  _buildButtons(),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(child: _buildMessage()),
+                  const SizedBox(width: 40),
+                  _buildButtons(),
+                ],
+              ),
         ),
       ),
     );
