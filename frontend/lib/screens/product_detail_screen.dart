@@ -8,6 +8,7 @@ import '../utils/constants.dart';
 import '../theme/app_theme.dart';
 import '../utils/price_formatter.dart';
 import '../widgets/global_layout.dart';
+import '../widgets/mobile_bottom_navigation.dart';
 import '../providers/cart_provider.dart';
 import '../providers/ui_settings_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -122,6 +123,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
     return Scaffold(
       appBar: const GlobalAppBar(showBackButton: true),
       drawer: const GlobalDrawer(),
+      bottomNavigationBar: buildMobileBottomNavigationBar(context),
       body: _buildBody(context, isMobile),
     );
   }

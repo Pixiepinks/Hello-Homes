@@ -6,26 +6,16 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../theme/app_theme.dart';
 
-class MobileNavigationShell extends StatelessWidget {
-  final Widget child;
+Widget? buildMobileBottomNavigationBar(BuildContext context) {
+  final isMobile = MobileBottomNavigation.isVisibleForWidth(
+    MediaQuery.sizeOf(context).width,
+  );
 
-  const MobileNavigationShell({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MobileBottomNavigation.isVisibleForWidth(
-      MediaQuery.sizeOf(context).width,
-    );
-
-    if (!isMobile) {
-      return child;
-    }
-
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: const MobileBottomNavigation(),
-    );
+  if (!isMobile) {
+    return null;
   }
+
+  return const MobileBottomNavigation();
 }
 
 class MobileBottomNavigation extends StatelessWidget {

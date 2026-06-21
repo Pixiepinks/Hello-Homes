@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
+import '../widgets/mobile_bottom_navigation.dart';
 import '../theme/app_theme.dart';
 
 class CategoryProductsScreen extends StatefulWidget {
@@ -56,6 +57,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     return Scaffold(
       appBar: const GlobalAppBar(showBackButton: true),
       drawer: const GlobalDrawer(),
+      bottomNavigationBar: buildMobileBottomNavigationBar(context),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(

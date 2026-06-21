@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/category.dart';
 import '../widgets/global_layout.dart';
+import '../widgets/mobile_bottom_navigation.dart';
 import '../theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -47,6 +48,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
     return Scaffold(
       appBar: const GlobalAppBar(showBackButton: true),
       drawer: const GlobalDrawer(),
+      bottomNavigationBar: buildMobileBottomNavigationBar(context),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(

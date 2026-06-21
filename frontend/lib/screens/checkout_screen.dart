@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_layout.dart';
+import '../widgets/mobile_bottom_navigation.dart';
 import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import 'payment_gateway_screen.dart';
@@ -396,6 +397,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       appBar: const GlobalAppBar(showBackButton: true),
       drawer: const GlobalDrawer(),
+      bottomNavigationBar: buildMobileBottomNavigationBar(context),
       body: SingleChildScrollView(
         child: Column(
           children: [
