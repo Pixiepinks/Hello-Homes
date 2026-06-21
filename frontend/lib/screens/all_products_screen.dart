@@ -10,7 +10,9 @@ import '../widgets/global_layout.dart';
 import '../theme/app_theme.dart';
 
 class AllProductsScreen extends StatefulWidget {
-  const AllProductsScreen({super.key});
+  final bool offersOnly;
+
+  const AllProductsScreen({super.key, this.offersOnly = false});
 
   @override
   State<AllProductsScreen> createState() => _AllProductsScreenState();
@@ -33,7 +35,12 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   Future<void> _fetchProducts({int page = 1}) async {
     setState(() => _isLoading = true);
     try {
-      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/products?page=$page&per_page=$_perPage'));
+      final saleFilter = widget.offersOnly ? '&on_sale=true' : '';
+      final response = await http.get(
+        Uri.parse(
+          '${AppConstants.apiUrl}/products?page=$page&per_page=$_perPage$saleFilter',
+        ),
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (mounted) {
@@ -58,21 +65,21 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     return Scaffold(
       appBar: const GlobalAppBar(showBackButton: true),
       drawer: const GlobalDrawer(),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 40),
-            _buildProductGrid(context),
-            const SizedBox(height: 40),
-            if (_lastPage > 1) _buildPaginationControls(),
-            const SizedBox(height: 80),
-            const GlobalFooter(),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: 40),
+                  _buildProductGrid(context),
+                  const SizedBox(height: 40),
+                  if (_lastPage > 1) _buildPaginationControls(),
+                  const SizedBox(height: 80),
+                  const GlobalFooter(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -80,15 +87,23 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     final isMobile = MediaQuery.of(context).size.width < 800;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 60, horizontal: 24),
+      padding: EdgeInsets.symmetric(
+        vertical: isMobile ? 40 : 60,
+        horizontal: 24,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.primaryBlue.withAlpha(10),
       ),
       child: Column(
         children: [
           Text(
-            'Explore All Products',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
+            widget.offersOnly
+                ? 'Latest Offers & Deals'
+                : 'Explore All Products',
+            style: Theme.of(context)
+                .textTheme
+                .displaySmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),
