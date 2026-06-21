@@ -491,7 +491,7 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
     if (!shouldShowPromotionBanner) return const SizedBox.shrink();
     debugPrint('[Home] promotion banner image URL: ${banner.bannerImageUrl}');
     final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 700;
+    final isMobile = width <= 768;
     final image = CachedNetworkImage(
       imageUrl: banner.bannerImageUrl,
       width: double.infinity,
@@ -523,9 +523,23 @@ class _HomepagePromoBannerState extends State<_HomepagePromoBanner> {
                   right: isMobile ? 16 : 42,
                   bottom: isMobile ? 10 : 24,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: isMobile ? 7 : 11),
-                    decoration: BoxDecoration(color: AppTheme.accentOrange, borderRadius: BorderRadius.circular(999)),
-                    child: Text('Buy Now', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 12 : 20,
+                      vertical: isMobile ? 6 : 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentOrange,
+                      borderRadius: BorderRadius.circular(isMobile ? 18 : 999),
+                    ),
+                    child: Text(
+                      'Buy Now',
+                      style: (isMobile ? Theme.of(context).textTheme.labelSmall : Theme.of(context).textTheme.labelLarge)
+                          ?.copyWith(
+                        color: Colors.white,
+                        fontSize: isMobile ? 12 : null,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -549,19 +563,45 @@ class _CountdownOverlay extends StatelessWidget {
     final minutes = remaining.inMinutes.remainder(60);
     final seconds = remaining.inSeconds.remainder(60);
     return Container(
-      padding: EdgeInsets.all(compact ? 8 : 14),
-      decoration: BoxDecoration(color: Colors.black.withAlpha(150), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        _timeBox(context, days, 'Days'), _timeBox(context, hours, 'Hours'), _timeBox(context, minutes, 'Mins'), _timeBox(context, seconds, 'Secs'),
-      ]),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 14,
+        vertical: compact ? 4 : 14,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(150),
+        borderRadius: BorderRadius.circular(compact ? 12 : 16),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _timeBox(context, days, 'Days'),
+          _timeBox(context, hours, 'Hours'),
+          _timeBox(context, minutes, 'Mins'),
+          _timeBox(context, seconds, 'Secs'),
+        ],
+      ),
     );
   }
 
   Widget _timeBox(BuildContext context, int value, String label) => Padding(
         padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 7),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(value.toString().padLeft(2, '0'), style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white70)),
+          Text(
+            value.toString().padLeft(2, '0'),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontSize: compact ? 13 : null,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white70,
+                  fontSize: compact ? 9 : null,
+                ),
+          ),
         ]),
       );
 }
