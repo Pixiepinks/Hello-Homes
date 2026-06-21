@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -71,8 +72,13 @@ class MobileBottomNavigation extends StatelessWidget {
                   activeIcon: Icons.chat_bubble_rounded,
                   iconColor: const Color(0xFF25D366),
                   activeIconColor: const Color(0xFF25D366),
-                  iconSize: 31,
-                  activeIconSize: 33,
+                  iconSize: 29,
+                  activeIconSize: 29,
+                  iconBuilder: (color, size) => FaIcon(
+                    FontAwesomeIcons.whatsapp,
+                    color: color,
+                    size: size,
+                  ),
                   onTap: () => _openWhatsApp(context),
                 ),
                 _MobileBottomNavigationItem(
@@ -131,6 +137,7 @@ class _MobileBottomNavigationItem extends StatelessWidget {
   final Color? activeIconColor;
   final double iconSize;
   final double activeIconSize;
+  final Widget Function(Color color, double size)? iconBuilder;
 
   const _MobileBottomNavigationItem({
     required this.label,
@@ -143,6 +150,7 @@ class _MobileBottomNavigationItem extends StatelessWidget {
     this.activeIconColor,
     this.iconSize = 24,
     this.activeIconSize = 25,
+    this.iconBuilder,
   });
 
   @override
@@ -171,11 +179,15 @@ class _MobileBottomNavigationItem extends StatelessWidget {
                     clipBehavior: Clip.hardEdge,
                     alignment: Alignment.center,
                     children: [
-                      Icon(
-                        isActive ? activeIcon : icon,
-                        color: color,
-                        size: isActive ? activeIconSize : iconSize,
-                      ),
+                      iconBuilder?.call(
+                            color,
+                            isActive ? activeIconSize : iconSize,
+                          ) ??
+                          Icon(
+                            isActive ? activeIcon : icon,
+                            color: color,
+                            size: isActive ? activeIconSize : iconSize,
+                          ),
                       if (badgeCount > 0)
                         Positioned(
                           right: 0,
