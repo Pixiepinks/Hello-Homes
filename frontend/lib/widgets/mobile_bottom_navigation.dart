@@ -17,10 +17,13 @@ class MobileNavigationShell extends StatelessWidget {
       MediaQuery.sizeOf(context).width,
     );
 
+    if (!isMobile) {
+      return child;
+    }
+
     return Scaffold(
       body: child,
-      bottomNavigationBar:
-          isMobile ? const MobileBottomNavigation() : const SizedBox.shrink(),
+      bottomNavigationBar: const MobileBottomNavigation(),
     );
   }
 }
@@ -171,44 +174,49 @@ class _MobileBottomNavigationItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      isActive ? activeIcon : icon,
-                      color: color,
-                      size: isActive ? activeIconSize : iconSize,
-                    ),
-                    if (badgeCount > 0)
-                      Positioned(
-                        right: -10,
-                        top: -8,
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.accentOrange,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            badgeCount > 99 ? '99+' : badgeCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              height: 1,
+                SizedBox(
+                  width: 34,
+                  height: 30,
+                  child: Stack(
+                    clipBehavior: Clip.hardEdge,
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        isActive ? activeIcon : icon,
+                        color: color,
+                        size: isActive ? activeIconSize : iconSize,
+                      ),
+                      if (badgeCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.accentOrange,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              badgeCount > 99 ? '99+' : badgeCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
