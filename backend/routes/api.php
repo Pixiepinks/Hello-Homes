@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\HeroBannerController;
 use App\Http\Controllers\Api\PromotionBannerController;
 use App\Http\Controllers\Api\PaymentSettingController;
 use App\Http\Controllers\Api\SubcategoryController;
+use App\Http\Controllers\Api\ChildCategoryController;
+use App\Http\Controllers\Api\BrandController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +31,10 @@ Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('i
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/subcategories', [SubcategoryController::class, 'index']);
 Route::get('/subcategories/{id}', [SubcategoryController::class, 'show'])->whereNumber('id');
+Route::get('/child-categories', [ChildCategoryController::class, 'index']);
+Route::get('/child-categories/{id}', [ChildCategoryController::class, 'show'])->whereNumber('id');
+Route::get('/brands', [BrandController::class, 'index']);
+Route::get('/brands/{id}', [BrandController::class, 'show'])->whereNumber('id');
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{id}', [OrderController::class, 'show'])->whereNumber('id');
 Route::post('/orders/{id}/upload-slip', [OrderController::class, 'uploadSlip']);
@@ -60,6 +66,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Admin Resources
         Route::apiResource('categories', CategoryController::class)->except(['index']);
         Route::apiResource('subcategories', SubcategoryController::class)->except(['index', 'show']);
+        Route::apiResource('child-categories', ChildCategoryController::class)->except(['index', 'show']);
+        Route::apiResource('brands', BrandController::class)->except(['index', 'show']);
         Route::apiResource('customers', CustomerController::class);
 
         // Admin Order Routes

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/product.dart';
+import '../models/category.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
@@ -26,20 +27,42 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   int _lastPage = 1;
   int _totalItems = 0;
   final int _perPage = 12; // 12 products per page for a nice grid
+  List<Brand> _brands = [];
+  List<ChildCategory> _childCategories = [];
+  int? _selectedBrandId;
+  int? _selectedChildCategoryId;
 
   @override
   void initState() {
     super.initState();
+    _fetchFilters();
     _fetchProducts();
+  }
+
+  Future<void> _fetchFilters() async {
+    try {
+      final responses = await Future.wait([
+        http.get(Uri.parse('${AppConstants.apiUrl}/brands?active=true')),
+        http.get(Uri.parse('${AppConstants.apiUrl}/child-categories?active=true')),
+      ]);
+      if (mounted) {
+        setState(() {
+          _brands = responses[0].statusCode == 200 ? (json.decode(responses[0].body) as List).map((e) => Brand.fromJson(e)).toList() : [];
+          _childCategories = responses[1].statusCode == 200 ? (json.decode(responses[1].body) as List).map((e) => ChildCategory.fromJson(e)).toList() : [];
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchProducts({int page = 1}) async {
     setState(() => _isLoading = true);
     try {
       final saleFilter = widget.offersOnly ? '&on_sale=true' : '';
+      final brandFilter = _selectedBrandId == null ? '' : '&brand_id=$_selectedBrandId';
+      final childFilter = _selectedChildCategoryId == null ? '' : '&child_category_id=$_selectedChildCategoryId';
       final response = await http.get(
         Uri.parse(
-          '${AppConstants.apiUrl}/products?page=$page&per_page=$_perPage$saleFilter',
+          '${AppConstants.apiUrl}/products?page=$page&per_page=$_perPage$saleFilter$brandFilter$childFilter',
         ),
       );
       if (response.statusCode == 200) {
@@ -74,6 +97,8 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                 children: [
                   _buildHeader(context),
                   const SizedBox(height: 40),
+                  _buildFilters(),
+                  const SizedBox(height: 24),
                   _buildProductGrid(context),
                   const SizedBox(height: 40),
                   if (_lastPage > 1) _buildPaginationControls(),
@@ -109,6 +134,16 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Wrap(spacing: 16, runSpacing: 12, alignment: WrapAlignment.center, children: [
+        SizedBox(width: 240, child: DropdownButtonFormField<int>(isExpanded: true, value: _selectedBrandId, decoration: const InputDecoration(labelText: 'Filter by Brand'), items: [const DropdownMenuItem<int>(value: null, child: Text('All Brands')), ..._brands.map((b) => DropdownMenuItem<int>(value: int.tryParse(b.id), child: Text(b.name, overflow: TextOverflow.ellipsis)))], onChanged: (v) { setState(() => _selectedBrandId = v); _fetchProducts(page: 1); })),
+        SizedBox(width: 280, child: DropdownButtonFormField<int>(isExpanded: true, value: _selectedChildCategoryId, decoration: const InputDecoration(labelText: 'Filter by Child Category'), items: [const DropdownMenuItem<int>(value: null, child: Text('All Child Categories')), ..._childCategories.map((c) => DropdownMenuItem<int>(value: int.tryParse(c.id), child: Text(c.name, overflow: TextOverflow.ellipsis)))], onChanged: (v) { setState(() => _selectedChildCategoryId = v); _fetchProducts(page: 1); })),
+      ]),
     );
   }
 

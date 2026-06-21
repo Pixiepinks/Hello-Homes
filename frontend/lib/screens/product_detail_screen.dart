@@ -283,6 +283,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                 child: const Text('NEW ARRIVAL', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
             const SizedBox(height: 16),
+            if (product.brandName.isNotEmpty) ...[
+              Text('Brand: ${product.brandName}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+            ],
             if (product.categoryName.isNotEmpty) ...[
               Text(
                 product.categoryName.toUpperCase(),
@@ -399,7 +403,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
 
   Widget _buildSpecsTab(Product product, bool isMobile) {
     final rows = <MapEntry<String, String>>[
+      if (product.brandName.isNotEmpty) MapEntry('Brand', product.brandName),
       if (product.categoryName.isNotEmpty) MapEntry('Category', product.categoryName),
+      if (product.subcategoryName.isNotEmpty) MapEntry('Subcategory', product.subcategoryName),
+      if (product.childCategoryName.isNotEmpty) MapEntry('Child Subcategory', product.childCategoryName),
       ...product.specifications.entries,
     ];
 
