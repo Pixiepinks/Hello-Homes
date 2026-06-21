@@ -15,12 +15,6 @@ class MobileBottomNavigation extends StatelessWidget {
 
   static bool isVisibleForWidth(double width) => width <= breakpoint;
 
-  static double reservedBottomPadding(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    if (!isVisibleForWidth(mediaQuery.size.width)) return 0;
-    return barHeight + mediaQuery.padding.bottom;
-  }
-
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -31,10 +25,7 @@ class MobileBottomNavigation extends StatelessWidget {
     final bottomInset = mediaQuery.padding.bottom;
     final currentPath = _currentPath(context);
 
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
+    return SizedBox(
       height: barHeight + bottomInset,
       child: Material(
         color: AppTheme.surfaceWhite,
@@ -79,7 +70,7 @@ class MobileBottomNavigation extends StatelessWidget {
                     activeIconSize: 33,
                     customIcon: const _WhatsAppMark(),
                     isProminent: true,
-                    onTap: _openWhatsApp,
+                    onTap: () => _openWhatsApp(context),
                   ),
                   _MobileBottomNavigationItem(
                     label: 'Offers',
@@ -111,11 +102,19 @@ class MobileBottomNavigation extends StatelessWidget {
     return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
   }
 
-  Future<void> _openWhatsApp() async {
+  Future<void> _openWhatsApp(BuildContext context) async {
     final uri = Uri.parse(whatsappUrl);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      return;
     }
+
+    messenger?.showSnackBar(
+      const SnackBar(
+        content: Text('Could not open WhatsApp. Please try again.'),
+      ),
+    );
   }
 }
 

@@ -152,15 +152,9 @@ class _HelloHomesAppState extends State<HelloHomesApp> {
         theme: AppTheme.lightTheme,
         routerConfig: _router,
         builder: (context, child) {
-          final mobileBottomPadding =
-              MobileBottomNavigation.reservedBottomPadding(context);
-
-          return Stack(
+          return Column(
             children: [
-              Padding(
-                padding: EdgeInsets.only(bottom: mobileBottomPadding),
-                child: child!,
-              ),
+              Expanded(child: child ?? const SizedBox.shrink()),
               const CookieConsentBanner(),
               const MobileBottomNavigation(),
             ],
