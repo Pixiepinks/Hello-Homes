@@ -6,6 +6,25 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../theme/app_theme.dart';
 
+class MobileNavigationShell extends StatelessWidget {
+  final Widget child;
+
+  const MobileNavigationShell({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MobileBottomNavigation.isVisibleForWidth(
+      MediaQuery.sizeOf(context).width,
+    );
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar:
+          isMobile ? const MobileBottomNavigation() : const SizedBox.shrink(),
+    );
+  }
+}
+
 class MobileBottomNavigation extends StatelessWidget {
   static const double breakpoint = 1024;
   static const double barHeight = 72;
@@ -17,80 +36,70 @@ class MobileBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    if (!isVisibleForWidth(mediaQuery.size.width)) {
-      return const SizedBox.shrink();
-    }
-
-    final bottomInset = mediaQuery.padding.bottom;
     final currentPath = _currentPath(context);
 
-    return SizedBox(
-      height: barHeight + bottomInset,
-      child: Material(
-        color: AppTheme.surfaceWhite,
-        elevation: 10,
-        shadowColor: Colors.black.withAlpha(18),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(color: AppTheme.borderLight, width: 1),
-            ),
+    return Material(
+      color: AppTheme.surfaceWhite,
+      elevation: 10,
+      shadowColor: Colors.black.withAlpha(18),
+      child: Container(
+        height: barHeight + MediaQuery.paddingOf(context).bottom,
+        decoration: const BoxDecoration(
+          border: Border(
+            top: BorderSide(color: AppTheme.borderLight, width: 1),
           ),
-          child: SafeArea(
-            top: false,
-            left: false,
-            right: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Row(
-                children: [
-                  _MobileBottomNavigationItem(
-                    label: 'Home',
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home_rounded,
-                    isActive: currentPath == '/',
-                    onTap: () => context.go('/'),
+        ),
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: SizedBox(
+            height: barHeight,
+            child: Row(
+              children: [
+                _MobileBottomNavigationItem(
+                  label: 'Home',
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  isActive: currentPath == '/',
+                  onTap: () => context.go('/'),
+                ),
+                _MobileBottomNavigationItem(
+                  label: 'Categories',
+                  icon: Icons.grid_view_outlined,
+                  activeIcon: Icons.grid_view_rounded,
+                  isActive: currentPath.startsWith('/categories') ||
+                      currentPath.startsWith('/category/'),
+                  onTap: () => context.go('/categories'),
+                ),
+                _MobileBottomNavigationItem(
+                  label: 'WhatsApp',
+                  icon: Icons.chat_bubble_outline_rounded,
+                  activeIcon: Icons.chat_bubble_rounded,
+                  iconColor: const Color(0xFF25D366),
+                  activeIconColor: const Color(0xFF25D366),
+                  iconSize: 31,
+                  activeIconSize: 33,
+                  onTap: () => _openWhatsApp(context),
+                ),
+                _MobileBottomNavigationItem(
+                  label: 'Offers',
+                  icon: Icons.local_offer_outlined,
+                  activeIcon: Icons.local_offer_rounded,
+                  isActive: currentPath.startsWith('/offers'),
+                  onTap: () => context.go('/offers'),
+                ),
+                Consumer<CartProvider>(
+                  builder: (context, cart, _) => _MobileBottomNavigationItem(
+                    label: 'Cart',
+                    icon: Icons.shopping_bag_outlined,
+                    activeIcon: Icons.shopping_bag_rounded,
+                    isActive: currentPath.startsWith('/checkout'),
+                    badgeCount: cart.itemCount,
+                    onTap: () => context.go('/checkout'),
                   ),
-                  _MobileBottomNavigationItem(
-                    label: 'Categories',
-                    icon: Icons.grid_view_outlined,
-                    activeIcon: Icons.grid_view_rounded,
-                    isActive: currentPath.startsWith('/categories') ||
-                        currentPath.startsWith('/category/'),
-                    onTap: () => context.go('/categories'),
-                  ),
-                  _MobileBottomNavigationItem(
-                    label: 'WhatsApp',
-                    icon: Icons.chat_bubble_outline_rounded,
-                    activeIcon: Icons.chat_bubble_rounded,
-                    iconColor: const Color(0xFF25D366),
-                    activeIconColor: const Color(0xFF25D366),
-                    iconSize: 31,
-                    activeIconSize: 33,
-                    customIcon: const _WhatsAppMark(),
-                    isProminent: true,
-                    onTap: () => _openWhatsApp(context),
-                  ),
-                  _MobileBottomNavigationItem(
-                    label: 'Offers',
-                    icon: Icons.local_offer_outlined,
-                    activeIcon: Icons.local_offer_rounded,
-                    isActive: currentPath.startsWith('/offers'),
-                    onTap: () => context.go('/offers'),
-                  ),
-                  Consumer<CartProvider>(
-                    builder: (context, cart, _) => _MobileBottomNavigationItem(
-                      label: 'Cart',
-                      icon: Icons.shopping_bag_outlined,
-                      activeIcon: Icons.shopping_bag_rounded,
-                      isActive: currentPath.startsWith('/checkout'),
-                      badgeCount: cart.itemCount,
-                      onTap: () => context.go('/checkout'),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -129,8 +138,6 @@ class _MobileBottomNavigationItem extends StatelessWidget {
   final Color? activeIconColor;
   final double iconSize;
   final double activeIconSize;
-  final bool isProminent;
-  final Widget? customIcon;
 
   const _MobileBottomNavigationItem({
     required this.label,
@@ -143,8 +150,6 @@ class _MobileBottomNavigationItem extends StatelessWidget {
     this.activeIconColor,
     this.iconSize = 24,
     this.activeIconSize = 25,
-    this.isProminent = false,
-    this.customIcon,
   });
 
   @override
@@ -160,19 +165,8 @@ class _MobileBottomNavigationItem extends StatelessWidget {
         label: label,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minHeight: 56, minWidth: 44),
-            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppTheme.primaryBlue.withAlpha(20)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
-            ),
+          child: SizedBox(
+            height: MobileBottomNavigation.barHeight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -180,16 +174,10 @@ class _MobileBottomNavigationItem extends StatelessWidget {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    AnimatedScale(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOutCubic,
-                      scale: isActive || isProminent ? 1.04 : 1,
-                      child: customIcon ??
-                          Icon(
-                            isActive ? activeIcon : icon,
-                            color: color,
-                            size: isActive ? activeIconSize : iconSize,
-                          ),
+                    Icon(
+                      isActive ? activeIcon : icon,
+                      color: color,
+                      size: isActive ? activeIconSize : iconSize,
                     ),
                     if (badgeCount > 0)
                       Positioned(
@@ -223,22 +211,16 @@ class _MobileBottomNavigationItem extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 3),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: color,
-                    fontSize: isProminent ? 11.5 : 11,
-                    fontWeight: isActive || isProminent
-                        ? FontWeight.w800
-                        : FontWeight.w600,
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
                     letterSpacing: -0.15,
                     height: 1.05,
-                  ),
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -248,74 +230,4 @@ class _MobileBottomNavigationItem extends StatelessWidget {
       ),
     );
   }
-}
-
-class _WhatsAppMark extends StatelessWidget {
-  const _WhatsAppMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 34,
-      height: 34,
-      child: CustomPaint(painter: _WhatsAppMarkPainter()),
-    );
-  }
-}
-
-class _WhatsAppMarkPainter extends CustomPainter {
-  const _WhatsAppMarkPainter();
-
-  static const Color _green = Color(0xFF25D366);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = Paint()
-      ..color = _green
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final fill = Paint()
-      ..color = _green.withAlpha(18)
-      ..style = PaintingStyle.fill;
-
-    final center = Offset(size.width / 2, size.height / 2 - 1);
-    final radius = size.width * 0.37;
-    canvas.drawCircle(center, radius, fill);
-    canvas.drawCircle(center, radius, stroke);
-
-    final tail = Path()
-      ..moveTo(size.width * 0.33, size.height * 0.72)
-      ..lineTo(size.width * 0.24, size.height * 0.86)
-      ..lineTo(size.width * 0.42, size.height * 0.79);
-    canvas.drawPath(tail, stroke);
-
-    final handset = Path()
-      ..moveTo(size.width * 0.39, size.height * 0.39)
-      ..cubicTo(
-        size.width * 0.45,
-        size.height * 0.58,
-        size.width * 0.54,
-        size.height * 0.66,
-        size.width * 0.68,
-        size.height * 0.62,
-      );
-    canvas.drawPath(handset, stroke);
-
-    canvas.drawLine(
-      Offset(size.width * 0.38, size.height * 0.38),
-      Offset(size.width * 0.44, size.height * 0.32),
-      stroke,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.68, size.height * 0.62),
-      Offset(size.width * 0.73, size.height * 0.55),
-      stroke,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
