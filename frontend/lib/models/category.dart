@@ -1,4 +1,47 @@
 
+class Brand {
+  final String id;
+  final String name;
+  final String slug;
+  final String logoUrl;
+  final bool isActive;
+
+  Brand({required this.id, required this.name, this.slug = '', this.logoUrl = '', this.isActive = true});
+
+  factory Brand.fromJson(Map<String, dynamic> json) => Brand(
+    id: json['id'].toString(),
+    name: json['name']?.toString() ?? '',
+    slug: json['slug']?.toString() ?? '',
+    logoUrl: json['logo_url']?.toString() ?? '',
+    isActive: json['is_active'] == 1 || json['is_active'] == true,
+  );
+}
+
+class ChildCategory {
+  final String id;
+  final int categoryId;
+  final int subcategoryId;
+  final String name;
+  final String slug;
+  final String imageUrl;
+  final bool isActive;
+  final int sortOrder;
+  final List<ChildCategory> childCategories;
+
+  ChildCategory({required this.id, required this.categoryId, required this.subcategoryId, required this.name, this.slug = '', this.imageUrl = '', this.isActive = true, this.sortOrder = 0});
+
+  factory ChildCategory.fromJson(Map<String, dynamic> json) => ChildCategory(
+    id: json['id'].toString(),
+    categoryId: int.tryParse(json['category_id']?.toString() ?? '') ?? 0,
+    subcategoryId: int.tryParse(json['subcategory_id']?.toString() ?? '') ?? 0,
+    name: json['name']?.toString() ?? '',
+    slug: json['slug']?.toString() ?? '',
+    imageUrl: json['image_url']?.toString() ?? '',
+    isActive: json['is_active'] == 1 || json['is_active'] == true,
+    sortOrder: int.tryParse(json['sort_order']?.toString() ?? '0') ?? 0,
+  );
+}
+
 class Subcategory {
   final String id;
   final int categoryId;
@@ -14,6 +57,7 @@ class Subcategory {
     this.imageUrl = '',
     this.isActive = true,
     this.sortOrder = 0,
+    this.childCategories = const [],
   });
 
   factory Subcategory.fromJson(Map<String, dynamic> json) {
@@ -24,6 +68,9 @@ class Subcategory {
       imageUrl: json['image_url']?.toString() ?? '',
       isActive: json['is_active'] == 1 || json['is_active'] == true,
       sortOrder: int.tryParse(json['sort_order']?.toString() ?? '0') ?? 0,
+      childCategories: json['child_categories'] is List
+          ? (json['child_categories'] as List).map((item) => ChildCategory.fromJson(item)).toList()
+          : const [],
     );
   }
 }

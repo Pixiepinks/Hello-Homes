@@ -21,6 +21,11 @@ class Subcategory extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function childCategories()
+    {
+        return $this->hasMany(ChildCategory::class)->orderBy('sort_order')->orderBy('name');
+    }
+
     public function products()
     {
         return $this->hasMany(Product::class);

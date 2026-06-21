@@ -8,13 +8,14 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Notification;
 use App\Models\Subcategory;
+use App\Models\ChildCategory;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['deliveryOption', 'category', 'subcategory']);
+        $query = Product::with(['deliveryOption', 'category', 'subcategory', 'childCategory', 'brand']);
 
         // Search by title
         if ($request->has('search')) {
@@ -28,6 +29,14 @@ class ProductController extends Controller
 
         if ($request->filled('subcategory_id')) {
             $query->where('subcategory_id', $request->subcategory_id);
+        }
+
+        if ($request->filled('child_category_id')) {
+            $query->where('child_category_id', $request->child_category_id);
+        }
+
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
         }
 
         // Filter by sale status
@@ -51,7 +60,7 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['deliveryOption', 'category', 'subcategory'])->find($id);
+        $product = Product::with(['deliveryOption', 'category', 'subcategory', 'childCategory', 'brand'])->find($id);
 
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
@@ -78,9 +87,11 @@ class ProductController extends Controller
             'weight' => 'nullable|numeric',
             'category_id' => 'nullable|exists:categories,id',
             'subcategory_id' => ['nullable', 'exists:subcategories,id'],
+            'child_category_id' => ['nullable', 'exists:child_categories,id'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
         ]);
 
-        $this->normalizeSubcategory($validated);
+        $this->normalizeCategoryHierarchy($validated);
 
         $product = Product::create($validated);
 
@@ -115,9 +126,11 @@ class ProductController extends Controller
             'weight' => 'nullable|numeric',
             'category_id' => 'nullable|exists:categories,id',
             'subcategory_id' => ['nullable', 'exists:subcategories,id'],
+            'child_category_id' => ['nullable', 'exists:child_categories,id'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
         ]);
 
-        $this->normalizeSubcategory($validated);
+        $this->normalizeCategoryHierarchy($validated);
 
         $product->update($validated);
 
@@ -149,10 +162,11 @@ class ProductController extends Controller
         return response()->json(['message' => 'Product deleted successfully']);
     }
 
-    private function normalizeSubcategory(array &$validated): void
+    private function normalizeCategoryHierarchy(array &$validated): void
     {
         if (empty($validated['subcategory_id'])) {
             $validated['subcategory_id'] = null;
+            $validated['child_category_id'] = null;
             return;
         }
 
@@ -162,6 +176,18 @@ class ProductController extends Controller
         }
 
         $validated['category_id'] = $subcategory->category_id;
+
+        if (empty($validated['child_category_id'])) {
+            $validated['child_category_id'] = null;
+            return;
+        }
+
+        $childCategory = ChildCategory::find($validated['child_category_id']);
+        if (!$childCategory || (int) $childCategory->subcategory_id !== (int) $validated['subcategory_id']) {
+            throw ValidationException::withMessages(['child_category_id' => 'Selected child category does not belong to the selected subcategory.']);
+        }
+        $validated['category_id'] = $childCategory->category_id;
+        $validated['subcategory_id'] = $childCategory->subcategory_id;
     }
 
     public function categories()

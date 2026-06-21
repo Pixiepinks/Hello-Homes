@@ -19,6 +19,8 @@ class Product extends Model
         'original_price' => 'float',
         'weight' => 'float',
         'subcategory_id' => 'integer',
+        'child_category_id' => 'integer',
+        'brand_id' => 'integer',
     ];
 
     public function category()
@@ -29,6 +31,16 @@ class Product extends Model
     public function subcategory()
     {
         return $this->belongsTo(Subcategory::class);
+    }
+
+    public function childCategory()
+    {
+        return $this->belongsTo(ChildCategory::class);
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class);
     }
 
     public function deliveryOption()

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../theme/app_theme.dart';
 import '../models/product.dart';
+import '../models/category.dart' show Brand;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
@@ -38,6 +39,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   int? _selectedDeliveryOptionId;
   int? _selectedCategoryId;
   int? _selectedSubcategoryId;
+  int? _selectedChildCategoryId;
+  int? _selectedBrandId;
   final _weightController = TextEditingController(text: '1.0');
   List<dynamic> _deliveryOptions = [];
   bool _isLoadingOptions = true;
@@ -50,6 +53,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   // Search and Filter State
   final _searchController = TextEditingController();
   int? _filterCategoryId;
+  int? _filterChildCategoryId;
+  int? _filterBrandId;
   bool? _filterOnSale;
   bool? _filterIsNew;
   
@@ -61,6 +66,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   
   List<dynamic> _categories = [];
   List<dynamic> _subcategories = [];
+  List<dynamic> _childCategories = [];
+  List<Brand> _brands = [];
 
   @override
   void initState() {
@@ -68,6 +75,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     _fetchProducts();
     _fetchDeliveryOptions();
     _fetchCategories();
+    _fetchBrands();
   }
 
   Future<void> _fetchCategories() async {
@@ -82,6 +90,15 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     } catch (e) {
       debugPrint('Error fetching categories: $e');
     }
+  }
+
+  Future<void> _fetchBrands() async {
+    try {
+      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/brands?active=true'));
+      if (response.statusCode == 200 && mounted) {
+        setState(() => _brands = (json.decode(response.body) as List).map((item) => Brand.fromJson(item)).toList());
+      }
+    } catch (e) { debugPrint('Error fetching brands: $e'); }
   }
 
   Future<void> _fetchDeliveryOptions() async {
@@ -122,6 +139,12 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       }
       if (_filterCategoryId != null) {
         url += '&category_id=$_filterCategoryId';
+      }
+      if (_filterChildCategoryId != null) {
+        url += '&child_category_id=$_filterChildCategoryId';
+      }
+      if (_filterBrandId != null) {
+        url += '&brand_id=$_filterBrandId';
       }
       if (_filterOnSale != null) {
         url += '&on_sale=$_filterOnSale';
@@ -185,6 +208,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
         'weight': double.tryParse(_weightController.text) ?? 1.0,
         'category_id': _selectedCategoryId,
         'subcategory_id': _selectedSubcategoryId,
+        'child_category_id': _selectedChildCategoryId,
+        'brand_id': _selectedBrandId,
       });
 
       final token = context.read<AuthProvider>().token;
@@ -283,7 +308,10 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       _isUploadingAdditionalImages = false;
       _selectedCategoryId = null;
       _selectedSubcategoryId = null;
+      _selectedChildCategoryId = null;
+      _selectedBrandId = null;
       _subcategories = [];
+      _childCategories = [];
       if (_deliveryOptions.isNotEmpty) {
         final standard = _deliveryOptions.firstWhere((o) => o['type'] == 'weight_based', orElse: () => _deliveryOptions.first);
         _selectedDeliveryOptionId = standard['id'];
@@ -404,6 +432,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     if (_selectedCategoryId == null) {
       _subcategories = [];
       _selectedSubcategoryId = null;
+      _selectedChildCategoryId = null;
+      _childCategories = [];
       return;
     }
 
@@ -418,12 +448,40 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     if (_selectedSubcategoryId != null && !_subcategories.any((sub) => int.tryParse(sub['id'].toString()) == _selectedSubcategoryId)) {
       _selectedSubcategoryId = null;
     }
+    _refreshChildCategoriesForSelectedSubcategory();
+  }
+
+  void _refreshChildCategoriesForSelectedSubcategory() {
+    if (_selectedSubcategoryId == null) {
+      _childCategories = [];
+      _selectedChildCategoryId = null;
+      return;
+    }
+    final subcategory = _subcategories.cast<dynamic>().firstWhere(
+      (s) => int.tryParse(s['id'].toString()) == _selectedSubcategoryId,
+      orElse: () => null,
+    );
+    _childCategories = subcategory is Map && subcategory['child_categories'] is List
+        ? (subcategory['child_categories'] as List).where((child) => child['is_active'] == 1 || child['is_active'] == true).toList()
+        : <dynamic>[];
+    if (_selectedChildCategoryId != null && !_childCategories.any((child) => int.tryParse(child['id'].toString()) == _selectedChildCategoryId)) {
+      _selectedChildCategoryId = null;
+    }
+  }
+
+  void _selectSubcategory(int? subcategoryId) {
+    setState(() {
+      _selectedSubcategoryId = subcategoryId;
+      _selectedChildCategoryId = null;
+      _refreshChildCategoriesForSelectedSubcategory();
+    });
   }
 
   void _selectCategory(int? categoryId) {
     setState(() {
       _selectedCategoryId = categoryId;
       _selectedSubcategoryId = null;
+      _selectedChildCategoryId = null;
       _refreshSubcategoriesForSelectedCategory();
     });
   }
@@ -442,6 +500,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     _selectedDeliveryOptionId = product.deliveryOptionId;
     _selectedCategoryId = product.categoryId;
     _selectedSubcategoryId = product.subcategoryId;
+    _selectedChildCategoryId = product.childCategoryId;
+    _selectedBrandId = product.brandId;
     _refreshSubcategoriesForSelectedCategory();
     _weightController.text = product.weight.toString();
 
@@ -587,6 +647,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                             _searchController.clear();
                             _filterCategoryId = null;
                             _filterOnSale = null;
+                            _filterChildCategoryId = null;
+                            _filterBrandId = null;
                             _filterIsNew = null;
                           });
                           _fetchProducts(page: 1);
@@ -939,7 +1001,34 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                               child: Text(s['name']?.toString() ?? 'Unnamed Subcategory', overflow: TextOverflow.ellipsis),
                             )),
                       ],
-                onChanged: _subcategories.isEmpty ? null : (v) => setState(() => _selectedSubcategoryId = v),
+                onChanged: _subcategories.isEmpty ? null : _selectSubcategory,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                isExpanded: true,
+                value: _selectedChildCategoryId,
+                decoration: const InputDecoration(labelText: 'Child Subcategory'),
+                items: _childCategories.isEmpty
+                    ? [const DropdownMenuItem<int>(value: null, child: Text('No child subcategories available'))]
+                    : [
+                        const DropdownMenuItem<int>(value: null, child: Text('No Child Subcategory', overflow: TextOverflow.ellipsis)),
+                        ..._childCategories.map((c) => DropdownMenuItem<int>(
+                              value: int.tryParse(c['id'].toString()),
+                              child: Text(c['name']?.toString() ?? 'Unnamed Child Subcategory', overflow: TextOverflow.ellipsis),
+                            )),
+                      ],
+                onChanged: _childCategories.isEmpty ? null : (v) => setState(() => _selectedChildCategoryId = v),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                isExpanded: true,
+                value: _selectedBrandId,
+                decoration: const InputDecoration(labelText: 'Brand'),
+                items: [
+                  const DropdownMenuItem<int>(value: null, child: Text('No Brand', overflow: TextOverflow.ellipsis)),
+                  ..._brands.map((b) => DropdownMenuItem<int>(value: int.tryParse(b.id), child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                ],
+                onChanged: (v) => setState(() => _selectedBrandId = v),
               ),
               const SizedBox(height: 16),
               _buildAdditionalImagesUploader(),

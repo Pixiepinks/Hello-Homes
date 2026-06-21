@@ -9,6 +9,8 @@ import '../utils/price_formatter.dart';
 import '../providers/auth_provider.dart';
 import 'admin_products_view.dart';
 import 'admin_categories_view.dart';
+import 'admin_child_categories_view.dart';
+import 'admin_brands_view.dart';
 import 'admin_customers_view.dart';
 import 'admin_orders_view.dart';
 import 'admin_settings_view.dart';
@@ -44,7 +46,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _fetchStats();
     });
     if (widget.initialOrderId != null) {
-      _selectedIndex = 3; // Orders view
+      _selectedIndex = 5; // Orders view
     }
   }
 
@@ -89,14 +91,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         case 2:
           return const AdminCategoriesView();
         case 3:
-          return AdminOrdersView(initialSearch: widget.initialOrderId);
+          return const AdminChildCategoriesView();
         case 4:
-          return const AdminCustomersView();
+          return const AdminBrandsView();
         case 5:
-          return const AdminSettingsView();
+          return AdminOrdersView(initialSearch: widget.initialOrderId);
         case 6:
-          return const AdminBankDetailsView();
+          return const AdminCustomersView();
         case 7:
+          return const AdminSettingsView();
+        case 8:
+          return const AdminBankDetailsView();
+        case 9:
           return const AdminUiSettingsView();
         case 0:
         default:
@@ -202,11 +208,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 _buildSidebarItem(Icons.dashboard, 'Overview', 0),
                 _buildSidebarItem(Icons.shopping_bag, 'Products', 1),
                 _buildSidebarItem(Icons.category, 'Categories', 2),
-                _buildSidebarItem(Icons.receipt, 'Orders', 3),
-                 _buildSidebarItem(Icons.people, 'Customers', 4),
-                _buildSidebarItem(Icons.settings, 'Settings', 5),
-                _buildSidebarItem(Icons.account_balance, 'Bank Details', 6),
-                _buildSidebarItem(Icons.tune, 'UI Settings', 7),
+                _buildSidebarItem(Icons.account_tree, 'Child Categories', 3),
+                _buildSidebarItem(Icons.sell, 'Brands', 4),
+                _buildSidebarItem(Icons.receipt, 'Orders', 5),
+                 _buildSidebarItem(Icons.people, 'Customers', 6),
+                _buildSidebarItem(Icons.settings, 'Settings', 7),
+                _buildSidebarItem(Icons.account_balance, 'Bank Details', 8),
+                _buildSidebarItem(Icons.tune, 'UI Settings', 9),
               ],
             ),
           ),

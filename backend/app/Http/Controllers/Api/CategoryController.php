@@ -11,7 +11,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        return response()->json(Category::with('subcategories')->get());
+        return response()->json(Category::with('subcategories.childCategories')->get());
     }
 
     public function store(Request $request)

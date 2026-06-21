@@ -19,6 +19,10 @@ class Product {
   final String categoryName;
   final int? subcategoryId;
   final String subcategoryName;
+  final int? childCategoryId;
+  final String childCategoryName;
+  final int? brandId;
+  final String brandName;
 
   Product({
     required this.id,
@@ -39,6 +43,10 @@ class Product {
     this.categoryName = '',
     this.subcategoryId,
     this.subcategoryName = '',
+    this.childCategoryId,
+    this.childCategoryName = '',
+    this.brandId,
+    this.brandName = '',
   });
 
   List<String> get galleryImages {
@@ -104,6 +112,14 @@ class Product {
       subcategoryId: json['subcategory_id'] != null ? int.tryParse(json['subcategory_id'].toString()) : null,
       subcategoryName: (json['subcategory'] != null && json['subcategory'] is Map)
           ? (json['subcategory']['name']?.toString() ?? '')
+          : '',
+      childCategoryId: json['child_category_id'] != null ? int.tryParse(json['child_category_id'].toString()) : null,
+      childCategoryName: (json['child_category'] != null && json['child_category'] is Map)
+          ? (json['child_category']['name']?.toString() ?? '')
+          : '',
+      brandId: json['brand_id'] != null ? int.tryParse(json['brand_id'].toString()) : null,
+      brandName: (json['brand'] != null && json['brand'] is Map)
+          ? (json['brand']['name']?.toString() ?? '')
           : '',
     );
   }
