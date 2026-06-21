@@ -8,17 +8,22 @@ import '../models/category.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_layout.dart';
 import '../widgets/global_layout.dart';
+import '../widgets/category_mega_menu.dart';
 import '../widgets/mobile_bottom_navigation.dart';
 import '../theme/app_theme.dart';
 
 class CategoryProductsScreen extends StatefulWidget {
   final String categoryId;
   final String categoryTitle;
+  final String? subcategorySlug;
+  final String? childCategorySlug;
 
   const CategoryProductsScreen({
     super.key, 
     required this.categoryId,
     required this.categoryTitle,
+    this.subcategorySlug,
+    this.childCategorySlug,
   });
 
   @override
@@ -29,20 +34,71 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   List<Product> _products = [];
   List<Subcategory> _subcategories = [];
   String? _selectedSubcategoryId;
+  String? _selectedChildCategoryId;
+  String? _resolvedCategoryId;
+  String _resolvedTitle = 'Category';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchSubcategories();
-    _fetchCategoryProducts();
+    _resolvedTitle = widget.categoryTitle;
+    _resolveCategoryPath();
+  }
+
+
+  Future<void> _resolveCategoryPath() async {
+    _resolvedCategoryId = widget.categoryId;
+    _resolvedTitle = widget.categoryTitle;
+
+    final looksLikeSlug = int.tryParse(widget.categoryId) == null ||
+        widget.subcategorySlug != null ||
+        widget.childCategorySlug != null;
+
+    if (looksLikeSlug) {
+      try {
+        final categories = await CategoryTreeRepository.load();
+        final category = categories.firstWhere(
+          (item) => item.slug == widget.categoryId || item.id == widget.categoryId,
+          orElse: () => categories.firstWhere(
+            (item) => item.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-\$'), '') == widget.categoryId,
+          ),
+        );
+        _resolvedCategoryId = category.id;
+        _resolvedTitle = category.title;
+
+        if (widget.subcategorySlug != null) {
+          final subcategory = category.subcategories.firstWhere(
+            (item) => item.slug == widget.subcategorySlug || item.id == widget.subcategorySlug,
+          );
+          _selectedSubcategoryId = subcategory.id;
+          _resolvedTitle = subcategory.name;
+
+          if (widget.childCategorySlug != null) {
+            final child = subcategory.childCategories.firstWhere(
+              (item) => item.slug == widget.childCategorySlug || item.id == widget.childCategorySlug,
+            );
+            _selectedChildCategoryId = child.id;
+            _resolvedTitle = child.name;
+          }
+        }
+      } catch (_) {
+        // Fall back to the original value so legacy ID links keep working.
+      }
+    }
+
+    await _fetchSubcategories();
+    await _fetchCategoryProducts();
   }
 
   Future<void> _fetchCategoryProducts() async {
     try {
-      var url = '${AppConstants.apiUrl}/products?category_id=${widget.categoryId}&all=1';
+      var url = '${AppConstants.apiUrl}/products?category_id=${_resolvedCategoryId ?? widget.categoryId}&all=1';
       if (_selectedSubcategoryId != null) {
         url += '&subcategory_id=$_selectedSubcategoryId';
+      }
+      if (_selectedChildCategoryId != null) {
+        url += '&child_category_id=$_selectedChildCategoryId';
       }
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -62,7 +118,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
   Future<void> _fetchSubcategories() async {
     try {
-      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/subcategories?category_id=${widget.categoryId}&active=1'));
+      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/subcategories?category_id=${_resolvedCategoryId ?? widget.categoryId}&active=1'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
@@ -77,6 +133,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   void _selectSubcategory(String? subcategoryId) {
     setState(() {
       _selectedSubcategoryId = subcategoryId;
+      _selectedChildCategoryId = null;
       _isLoading = true;
     });
     _fetchCategoryProducts();
@@ -119,7 +176,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       child: Column(
         children: [
           Text(
-            widget.categoryTitle,
+            _resolvedTitle,
             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],

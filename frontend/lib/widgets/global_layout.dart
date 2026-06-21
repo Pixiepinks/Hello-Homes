@@ -11,6 +11,7 @@ import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import 'product_search_bar.dart';
 import 'notification_bell.dart';
+import 'category_mega_menu.dart';
 
 class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
@@ -147,10 +148,7 @@ class SecondaryCategoryNavBar extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  const _SecondaryCategoryNavItem(
-                    label: 'All Categories',
-                    showMenuIcon: true,
-                  ),
+                  AllCategoriesMenuButton(),
                   for (final item in _centerItems)
                     _SecondaryCategoryNavItem(label: item),
                   for (final item in _rightItems)
@@ -162,10 +160,7 @@ class SecondaryCategoryNavBar extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.only(left: 36),
-                  child: _SecondaryCategoryNavItem(
-                    label: 'All Categories',
-                    showMenuIcon: true,
-                  ),
+                  child: AllCategoriesMenuButton(),
                 ),
                 Expanded(
                   child: Center(

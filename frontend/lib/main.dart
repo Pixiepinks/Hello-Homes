@@ -78,6 +78,23 @@ GoRouter _buildRouter(AuthProvider authProvider) {
         },
       ),
       GoRoute(
+        path: '/category/:categorySlug/:subcategorySlug/:childCategorySlug',
+        builder: (context, state) => CategoryProductsScreen(
+          categoryId: state.pathParameters['categorySlug']!,
+          categoryTitle: 'Category',
+          subcategorySlug: state.pathParameters['subcategorySlug'],
+          childCategorySlug: state.pathParameters['childCategorySlug'],
+        ),
+      ),
+      GoRoute(
+        path: '/category/:categorySlug/:subcategorySlug',
+        builder: (context, state) => CategoryProductsScreen(
+          categoryId: state.pathParameters['categorySlug']!,
+          categoryTitle: 'Category',
+          subcategorySlug: state.pathParameters['subcategorySlug'],
+        ),
+      ),
+      GoRoute(
         path: '/category/:id',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
