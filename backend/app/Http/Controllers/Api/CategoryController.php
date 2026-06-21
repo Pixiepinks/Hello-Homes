@@ -14,6 +14,11 @@ class CategoryController extends Controller
         return response()->json(Category::with('subcategories.childCategories')->get());
     }
 
+    public function tree()
+    {
+        return response()->json(Category::with('subcategories.childCategories')->get());
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

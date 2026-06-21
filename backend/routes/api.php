@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\BrandController;
 // Public Routes
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
+Route::get('/categories/tree', [CategoryController::class, 'tree']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/subcategories', [SubcategoryController::class, 'index']);
 Route::get('/subcategories/{id}', [SubcategoryController::class, 'show'])->whereNumber('id');

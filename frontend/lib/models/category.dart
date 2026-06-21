@@ -76,6 +76,7 @@ class Subcategory {
   final String id;
   final int categoryId;
   final String name;
+  final String slug;
   final String imageUrl;
   final bool isActive;
   final int sortOrder;
@@ -85,6 +86,7 @@ class Subcategory {
     required this.id,
     required this.categoryId,
     required this.name,
+    this.slug = '',
     this.imageUrl = '',
     this.isActive = true,
     this.sortOrder = 0,
@@ -96,6 +98,7 @@ class Subcategory {
       id: json['id'].toString(),
       categoryId: int.tryParse(json['category_id']?.toString() ?? '') ?? 0,
       name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
       imageUrl: json['image_url']?.toString() ?? '',
       isActive: json['is_active'] == 1 || json['is_active'] == true,
       sortOrder: int.tryParse(json['sort_order']?.toString() ?? '0') ?? 0,
@@ -107,6 +110,7 @@ class Subcategory {
 class Category {
   final String id;
   final String title;
+  final String slug;
   final String subtitle;
   final String imageUrl;
   final List<Subcategory> subcategories;
@@ -115,6 +119,7 @@ class Category {
   Category({
     required this.id,
     required this.title,
+    this.slug = '',
     required this.subtitle,
     required this.imageUrl,
     this.subcategories = const [],
@@ -124,7 +129,8 @@ class Category {
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
       id: json['id'].toString(),
-      title: json['title'],
+      title: (json['title'] ?? json['name'] ?? '').toString(),
+      slug: json['slug']?.toString() ?? '',
       subtitle: json['subtitle'] ?? '',
       imageUrl: json['image_url'] ?? '',
       subcategories: json['subcategories'] is List
