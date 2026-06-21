@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -72,12 +72,12 @@ class MobileBottomNavigation extends StatelessWidget {
                   activeIcon: Icons.chat_bubble_rounded,
                   iconColor: const Color(0xFF25D366),
                   activeIconColor: const Color(0xFF25D366),
-                  iconSize: 29,
-                  activeIconSize: 29,
-                  iconBuilder: (color, size) => FaIcon(
-                    FontAwesomeIcons.whatsapp,
-                    color: color,
-                    size: size,
+                  iconSize: 28,
+                  activeIconSize: 28,
+                  iconBuilder: (_, __) => SvgPicture.asset(
+                    'assets/icons/whatsapp.svg',
+                    width: 28,
+                    height: 28,
                   ),
                   onTap: () => _openWhatsApp(context),
                 ),
