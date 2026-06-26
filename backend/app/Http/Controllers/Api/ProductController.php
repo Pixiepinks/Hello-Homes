@@ -22,9 +22,21 @@ class ProductController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // Filter by category
+        // Filter by category. A category-level filter intentionally returns
+        // products assigned to that category, including products normalized from
+        // its subcategories and child categories.
         if ($request->has('category_id')) {
             $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('category_slug')) {
+            $category = Category::where('slug', $request->category_slug)->first();
+            $query->where('category_id', $category?->id ?? 0);
+        }
+
+        if ($request->filled('category_name')) {
+            $category = Category::where('title', $request->category_name)->first();
+            $query->where('category_id', $category?->id ?? 0);
         }
 
         if ($request->filled('subcategory_id')) {
