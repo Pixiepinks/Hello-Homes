@@ -24,8 +24,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _medicalHealthcareTitle = 'Medical & Healthcare';
+
   List<Product> _products = [];
+  List<Product> _medicalHealthcareProducts = [];
   List<Category> _categories = [];
+  Category? _medicalHealthcareCategory;
   bool _isLoading = true;
   bool _isLoadingCategories = true;
 
@@ -59,15 +63,52 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
+          final categories = data.map((item) => Category.fromJson(item)).toList();
+          final medicalCategory = _findMedicalHealthcareCategory(categories);
           setState(() {
-            _categories = data.map((item) => Category.fromJson(item)).toList();
+            _categories = categories;
+            _medicalHealthcareCategory = medicalCategory;
             _isLoadingCategories = false;
           });
+          if (medicalCategory != null) {
+            _fetchMedicalHealthcareProducts(medicalCategory);
+          }
         }
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingCategories = false);
     }
+  }
+
+  Category? _findMedicalHealthcareCategory(List<Category> categories) {
+    for (final category in categories) {
+      if (category.title == _medicalHealthcareTitle) {
+        return category;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _fetchMedicalHealthcareProducts(Category category) async {
+    final slug = category.slug.trim();
+    final query = slug.isNotEmpty
+        ? 'category_slug=${Uri.encodeQueryComponent(slug)}'
+        : 'category_id=${Uri.encodeQueryComponent(category.id)}';
+
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.apiUrl}/products?all=1&$query'),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _medicalHealthcareProducts =
+                data.map((item) => Product.fromJson(item)).toList();
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -101,12 +142,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildSectionTitle(context, 'Featured Products'),
                   const SizedBox(height: 16),
                   _buildHorizontalProductSlider(context, _products),
+                  if (_medicalHealthcareProducts.isNotEmpty) ...[
+                    const SizedBox(height: 60),
+                    _buildSectionTitle(
+                      context,
+                      _medicalHealthcareTitle,
+                      viewAllRoute: _medicalHealthcareCategoryRoute,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildHorizontalProductSlider(
+                      context,
+                      _medicalHealthcareProducts,
+                    ),
+                  ],
                   const SizedBox(height: 80),
                   const GlobalFooter(),
                 ],
               ),
             ),
     );
+  }
+
+  String get _medicalHealthcareCategoryRoute {
+    final category = _medicalHealthcareCategory;
+    if (category == null) {
+      return '/products';
+    }
+
+    final slug = category.slug.trim();
+    if (slug.isNotEmpty) {
+      return '/category/${Uri.encodeComponent(slug)}';
+    }
+
+    return '/category/${Uri.encodeComponent(category.id)}?title=${Uri.encodeQueryComponent(category.title)}';
   }
 
   List<Product> get _bestOfferProducts {
