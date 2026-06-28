@@ -14,18 +14,19 @@ class MetaConversionsApiService
         $accessToken = config('services.meta.access_token');
 
         if (empty($pixelId) || empty($accessToken)) {
-            if (!app()->environment('production')) {
-                Log::debug('Meta CAPI Purchase skipped: missing pixel id or access token.', [
-                    'order_id' => $order->id,
-                    'event_id' => $eventId,
-                ]);
-            }
+            Log::warning('Meta CAPI Purchase skipped: missing pixel id or access token.', [
+                'order_id' => $order->id,
+                'event_id' => $eventId,
+                'has_pixel_id' => !empty($pixelId),
+                'has_access_token' => !empty($accessToken),
+            ]);
             return;
         }
 
         $order->loadMissing('items');
 
         $payload = [
+            'access_token' => $accessToken,
             'data' => [[
                 'event_name' => 'Purchase',
                 'event_time' => now()->timestamp,
@@ -51,34 +52,57 @@ class MetaConversionsApiService
             $payload['test_event_code'] = $testCode;
         }
 
+        $url = "https://graph.facebook.com/v23.0/{$pixelId}/events";
+
+        Log::info('Meta CAPI Purchase request payload.', [
+            'order_id' => $order->id,
+            'url' => $url,
+            'payload' => $this->redactAccessToken($payload),
+            'event_id' => $eventId,
+        ]);
+
         try {
-            $response = Http::timeout(5)->post(
-                "https://graph.facebook.com/v20.0/{$pixelId}/events?access_token={$accessToken}",
-                $payload
-            );
+            $response = Http::timeout(5)->post($url, $payload);
+
+            $responseJson = $response->json();
+
+            Log::info('Meta CAPI Purchase response received.', [
+                'order_id' => $order->id,
+                'event_id' => $eventId,
+                'status' => $response->status(),
+                'response' => $responseJson,
+                'body' => $response->body(),
+            ]);
 
             if ($response->failed()) {
-                Log::warning('Meta CAPI Purchase failed.', [
+                Log::warning('Meta CAPI Purchase Graph API error.', [
                     'order_id' => $order->id,
+                    'event_id' => $eventId,
                     'status' => $response->status(),
+                    'error' => $responseJson['error'] ?? null,
                     'body' => $response->body(),
                 ]);
                 return;
             }
-
-            if (!app()->environment('production')) {
-                Log::debug('Meta CAPI Purchase sent.', [
-                    'order_id' => $order->id,
-                    'event_id' => $eventId,
-                    'response' => $response->json(),
-                ]);
-            }
         } catch (\Throwable $e) {
             Log::warning('Meta CAPI Purchase exception.', [
                 'order_id' => $order->id,
+                'event_id' => $eventId,
                 'message' => $e->getMessage(),
             ]);
         }
+    }
+
+    private function redactAccessToken(array $payload): array
+    {
+        if (isset($payload['access_token'])) {
+            $token = (string) $payload['access_token'];
+            $payload['access_token'] = strlen($token) <= 10
+                ? str_repeat('*', strlen($token))
+                : substr($token, 0, 6) . str_repeat('*', strlen($token) - 10) . substr($token, -4);
+        }
+
+        return $payload;
     }
 
     private function userData(array $data): array

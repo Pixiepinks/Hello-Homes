@@ -15,11 +15,19 @@ use App\Mail\OrderReceipt;
 use App\Models\Notification;
 use App\Models\PaymentSetting;
 use App\Services\MetaConversionsApiService;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
     public function store(Request $request)
     {
+        Log::info('Order creation request received.', [
+            'has_event_id' => $request->filled('event_id'),
+            'event_id' => $request->input('event_id'),
+            'event_source_url' => $request->input('event_source_url'),
+            'payload' => $request->except(['password']),
+        ]);
+
         $validated = $request->validate([
             'email' => 'required|email',
             'full_name' => 'required|string',
@@ -101,6 +109,12 @@ class OrderController extends Controller
 
 
         $eventId = $validated['event_id'] ?? 'server_purchase_' . $order->id . '_' . now()->timestamp;
+        Log::info('Order Purchase event_id resolved for Meta CAPI.', [
+            'order_id' => $order->id,
+            'received_event_id' => $validated['event_id'] ?? null,
+            'event_id' => $eventId,
+            'uses_frontend_event_id' => isset($validated['event_id']),
+        ]);
         $nameParts = preg_split('/\s+/', trim($order->full_name), 2);
         app(MetaConversionsApiService::class)->sendPurchase($order, $eventId, [
             'email' => $order->email,
