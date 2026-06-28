@@ -27,6 +27,10 @@ use App\Http\Controllers\MetaFeedController;
 |--------------------------------------------------------------------------
 */
 
+Route::options('/{any}', function () {
+    return response()->noContent();
+})->where('any', '.*');
+
 // Public Routes
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');

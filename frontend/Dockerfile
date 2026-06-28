@@ -22,9 +22,29 @@ FROM caddy:2-alpine
 COPY --from=build /app/build/web /srv
 COPY <<'CADDYFILE' /etc/caddy/Caddyfile
 :{$PORT:8080}
-root * /srv
-try_files {path} {path}/ /index.html
-file_server
+
+@laravel_api path /api /api/*
+handle @laravel_api {
+  reverse_proxy {$BACKEND_URL:http://localhost:8000} {
+    header_up Host {upstream_hostport}
+    header_up X-Forwarded-Host {host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+}
+
+handle /meta-feed.xml {
+  reverse_proxy {$BACKEND_URL:http://localhost:8000} {
+    header_up Host {upstream_hostport}
+    header_up X-Forwarded-Host {host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+}
+
+handle {
+  root * /srv
+  try_files {path} {path}/ /index.html
+  file_server
+}
 CADDYFILE
 EXPOSE 8080
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
