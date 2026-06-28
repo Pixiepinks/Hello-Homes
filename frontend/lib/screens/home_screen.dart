@@ -24,12 +24,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _coolingClimateTitle = 'Cooling & Climate';
   static const String _medicalHealthcareTitle = 'Medical & Healthcare';
 
   List<Product> _products = [];
-  List<Product> _medicalHealthcareProducts = [];
+  final Map<String, List<Product>> _categorySectionProducts = {};
   List<Category> _categories = [];
-  Category? _medicalHealthcareCategory;
+  final Map<String, Category> _homepageCategorySections = {};
   bool _isLoading = true;
   bool _isLoadingCategories = true;
 
@@ -42,7 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchProducts() async {
     try {
-      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/products?all=1'));
+      final response = await http.get(
+        Uri.parse('${AppConstants.apiUrl}/products?all=1'),
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
@@ -59,19 +62,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchCategories() async {
     try {
-      final response = await http.get(Uri.parse('${AppConstants.apiUrl}/categories'));
+      final response = await http.get(
+        Uri.parse('${AppConstants.apiUrl}/categories'),
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
-          final categories = data.map((item) => Category.fromJson(item)).toList();
-          final medicalCategory = _findMedicalHealthcareCategory(categories);
+          final categories = data
+              .map((item) => Category.fromJson(item))
+              .toList();
+          final homepageSections = _findHomepageCategorySections(categories);
           setState(() {
             _categories = categories;
-            _medicalHealthcareCategory = medicalCategory;
+            _homepageCategorySections
+              ..clear()
+              ..addAll(homepageSections);
             _isLoadingCategories = false;
           });
-          if (medicalCategory != null) {
-            _fetchMedicalHealthcareProducts(medicalCategory);
+          for (final entry in homepageSections.entries) {
+            _fetchHomepageCategoryProducts(entry.key, entry.value);
           }
         }
       }
@@ -80,16 +89,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Category? _findMedicalHealthcareCategory(List<Category> categories) {
-    for (final category in categories) {
-      if (category.title == _medicalHealthcareTitle) {
-        return category;
-      }
-    }
-    return null;
+  Map<String, Category> _findHomepageCategorySections(List<Category> categories) {
+    const sectionTitles = [
+      _coolingClimateTitle,
+      _medicalHealthcareTitle,
+    ];
+
+    return {
+      for (final title in sectionTitles)
+        for (final category in categories)
+          if (category.title == title) title: category,
+    };
   }
 
-  Future<void> _fetchMedicalHealthcareProducts(Category category) async {
+  Future<void> _fetchHomepageCategoryProducts(
+    String sectionTitle,
+    Category category,
+  ) async {
     final slug = category.slug.trim();
     final query = slug.isNotEmpty
         ? 'category_slug=${Uri.encodeQueryComponent(slug)}'
@@ -103,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
           setState(() {
-            _medicalHealthcareProducts =
+            _categorySectionProducts[sectionTitle] =
                 data.map((item) => Product.fromJson(item)).toList();
           });
         }
@@ -135,26 +151,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildHorizontalProductSlider(context, _newArrivalProducts),
                   ],
                   const SizedBox(height: 60),
-                  _buildSectionTitle(context, 'Top Categories', viewAllRoute: '/categories'),
+                  _buildSectionTitle(
+                    context,
+                    'Top Categories',
+                    viewAllRoute: '/categories',
+                  ),
                   const SizedBox(height: 16),
                   _buildCategoryGrid(context),
                   const SizedBox(height: 60),
                   _buildSectionTitle(context, 'Featured Products'),
                   const SizedBox(height: 16),
                   _buildHorizontalProductSlider(context, _products),
-                  if (_medicalHealthcareProducts.isNotEmpty) ...[
-                    const SizedBox(height: 60),
-                    _buildSectionTitle(
-                      context,
-                      _medicalHealthcareTitle,
-                      viewAllRoute: _medicalHealthcareCategoryRoute,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildHorizontalProductSlider(
-                      context,
-                      _medicalHealthcareProducts,
-                    ),
-                  ],
+                  ..._buildHomepageCategorySection(
+                    context,
+                    _coolingClimateTitle,
+                  ),
+                  ..._buildHomepageCategorySection(
+                    context,
+                    _medicalHealthcareTitle,
+                  ),
                   const SizedBox(height: 80),
                   const GlobalFooter(),
                 ],
@@ -163,8 +178,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String get _medicalHealthcareCategoryRoute {
-    final category = _medicalHealthcareCategory;
+  String _homepageCategoryRoute(String sectionTitle) {
+    final category = _homepageCategorySections[sectionTitle];
     if (category == null) {
       return '/products';
     }
@@ -175,6 +190,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return '/category/${Uri.encodeComponent(category.id)}?title=${Uri.encodeQueryComponent(category.title)}';
+  }
+
+  List<Widget> _buildHomepageCategorySection(
+    BuildContext context,
+    String sectionTitle,
+  ) {
+    final products = _categorySectionProducts[sectionTitle] ?? const <Product>[];
+    if (products.isEmpty) {
+      return const [];
+    }
+
+    return [
+      const SizedBox(height: 60),
+      _buildSectionTitle(
+        context,
+        sectionTitle,
+        viewAllRoute: _homepageCategoryRoute(sectionTitle),
+      ),
+      const SizedBox(height: 16),
+      _buildHorizontalProductSlider(context, products),
+    ];
   }
 
   List<Product> get _bestOfferProducts {
