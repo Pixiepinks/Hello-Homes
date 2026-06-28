@@ -19,13 +19,14 @@ RUN flutter build web --release --base-href / \
   --dart-define=SUPABASE_PAYMENT_SLIP_BUCKET=${SUPABASE_PAYMENT_SLIP_BUCKET}
 
 FROM caddy:2-alpine
+ENV BACKEND_URL=https://hello-homes-production.up.railway.app
 COPY --from=build /app/build/web /srv
 COPY <<'CADDYFILE' /etc/caddy/Caddyfile
 :{$PORT:8080}
 
 @laravel_api path /api /api/*
 handle @laravel_api {
-  reverse_proxy {$BACKEND_URL:http://localhost:8000} {
+  reverse_proxy {$BACKEND_URL} {
     header_up Host {upstream_hostport}
     header_up X-Forwarded-Host {host}
     header_up X-Forwarded-Proto {scheme}
@@ -33,7 +34,7 @@ handle @laravel_api {
 }
 
 handle /meta-feed.xml {
-  reverse_proxy {$BACKEND_URL:http://localhost:8000} {
+  reverse_proxy {$BACKEND_URL} {
     header_up Host {upstream_hostport}
     header_up X-Forwarded-Host {host}
     header_up X-Forwarded-Proto {scheme}
