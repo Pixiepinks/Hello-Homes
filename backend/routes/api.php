@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\ChildCategoryController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\HomepageProductRowController;
+use App\Http\Controllers\MetaFeedController;
 
 /*
 |--------------------------------------------------------------------------
@@ -100,6 +101,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('hero-banners', HeroBannerController::class)->except(['index', 'show']);
         Route::post('/promotion-banners/{promotionBanner}/end', [PromotionBannerController::class, 'end']);
         Route::apiResource('promotion-banners', PromotionBannerController::class)->except(['index', 'show']);
+
+        // Meta Commerce Manager (Admin)
+        Route::get('/admin/meta-feed', [MetaFeedController::class, 'status']);
+        Route::post('/admin/meta-feed/regenerate', [MetaFeedController::class, 'regenerate']);
 
         // Bank Details and Payment Settings (Admin)
         Route::put('/payment-settings', [PaymentSettingController::class, 'update']);
