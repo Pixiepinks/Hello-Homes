@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String _defaultBaseUrl = 'https://hello-homes-production.up.railway.app';
+  static const String _defaultBaseUrl = 'https://hellohomes.lk';
 
   // Override at build time with:
   // flutter build web --dart-define=API_BASE_URL=https://api.example.com
