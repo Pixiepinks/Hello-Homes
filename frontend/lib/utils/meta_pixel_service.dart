@@ -47,10 +47,17 @@ class MetaPixelService {
     pixel_impl.track('InitiateCheckout', _cartPayload(items, value));
   }
 
-  static String generateEventId() {
+  static String generateEventId({Random? random}) {
     final timestamp = DateTime.now().microsecondsSinceEpoch;
-    final random = Random.secure().nextInt(1 << 32).toRadixString(16);
-    return 'hh_purchase_${timestamp}_$random';
+    final randomHex = _randomHex32(random ?? Random.secure());
+    return 'hh_purchase_${timestamp}_$randomHex';
+  }
+
+  static String _randomHex32(Random random) {
+    return List.generate(
+      4,
+      (_) => random.nextInt(0x10000).toRadixString(16).padLeft(4, '0'),
+    ).join();
   }
 
   static void trackPurchase(Map<String, CartItem> items, double value, String eventId) {
