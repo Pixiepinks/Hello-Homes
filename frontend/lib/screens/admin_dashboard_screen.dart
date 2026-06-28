@@ -17,6 +17,7 @@ import 'admin_settings_view.dart';
 import 'admin_bank_details_view.dart';
 import 'admin_ui_settings_view.dart';
 import 'admin_product_row_order_view.dart';
+import 'admin_meta_feed_view.dart';
 import '../widgets/notification_bell.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -107,6 +108,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           return const AdminUiSettingsView();
         case 10:
           return const AdminProductRowOrderView();
+        case 11:
+          return const AdminMetaFeedView();
         case 0:
         default:
           return Column(
@@ -219,6 +222,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 _buildSidebarItem(Icons.account_balance, 'Bank Details', 8),
                 _buildSidebarItem(Icons.tune, 'UI Settings', 9),
                 _buildSidebarItem(Icons.reorder, 'Product Row Order', 10),
+                _buildSidebarItem(Icons.rss_feed, 'Meta Feed', 11),
               ],
             ),
           ),

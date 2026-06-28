@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MetaFeedController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Route;
 | API routes remain registered separately in routes/api.php under /api.
 |
 */
+
+Route::get('/meta-feed.xml', [MetaFeedController::class, 'feed']);
 
 Route::get('/{path?}', function () {
     $index = public_path('index.html');

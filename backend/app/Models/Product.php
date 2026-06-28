@@ -15,6 +15,8 @@ class Product extends Model
         'specifications' => 'array',
         'is_new' => 'boolean',
         'is_on_sale' => 'boolean',
+        'is_active' => 'boolean',
+        'stock_quantity' => 'integer',
         'price' => 'float',
         'original_price' => 'float',
         'weight' => 'float',
