@@ -28,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String _medicalHealthcareTitle = 'Medical & Healthcare';
 
   List<Product> _products = [];
+  List<Product> _bestOfferRowProducts = [];
+  List<Product> _newArrivalRowProducts = [];
   final Map<String, List<Product>> _categorySectionProducts = {};
   List<Category> _categories = [];
   final Map<String, Category> _homepageCategorySections = {};
@@ -38,13 +40,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchProducts();
+    _fetchHomepageSystemRowProducts('best_offers');
+    _fetchHomepageSystemRowProducts('new_arrivals');
     _fetchCategories();
   }
 
   Future<void> _fetchProducts() async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConstants.apiUrl}/products?all=1'),
+        Uri.parse('${AppConstants.apiUrl}/products?all=1&homepage_row_key=featured_products'),
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -58,6 +62,28 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+
+  Future<void> _fetchHomepageSystemRowProducts(String rowKey) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.apiUrl}/products?all=1&homepage_row_key=$rowKey'),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            final products = data.map((item) => Product.fromJson(item)).toList();
+            if (rowKey == 'best_offers') {
+              _bestOfferRowProducts = products;
+            } else if (rowKey == 'new_arrivals') {
+              _newArrivalRowProducts = products;
+            }
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchCategories() async {
@@ -108,8 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
   ) async {
     final slug = category.slug.trim();
     final query = slug.isNotEmpty
-        ? 'category_slug=${Uri.encodeQueryComponent(slug)}'
-        : 'category_id=${Uri.encodeQueryComponent(category.id)}';
+        ? 'category_slug=${Uri.encodeQueryComponent(slug)}&homepage_row_key=category_${category.id}'
+        : 'category_id=${Uri.encodeQueryComponent(category.id)}&homepage_row_key=category_${category.id}';
 
     try {
       final response = await http.get(
@@ -238,11 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Product> get _newArrivalProducts {
+    if (_newArrivalRowProducts.isNotEmpty) {
+      return _newArrivalRowProducts.take(12).toList();
+    }
     return _products.where((product) => product.isNew).take(12).toList();
   }
 
   Widget _buildBestOffersSection(BuildContext context) {
-    final bestOffers = _bestOfferProducts;
+    final bestOffers = _bestOfferRowProducts.isNotEmpty ? _bestOfferRowProducts : _bestOfferProducts;
     if (bestOffers.isEmpty) {
       return const SizedBox.shrink();
     }

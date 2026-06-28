@@ -10,6 +10,7 @@ use App\Models\Notification;
 use App\Models\Subcategory;
 use App\Models\ChildCategory;
 use Illuminate\Validation\ValidationException;
+use App\Http\Controllers\Api\HomepageProductRowController;
 
 class ProductController extends Controller
 {
@@ -61,13 +62,35 @@ class ProductController extends Controller
             $query->where('is_new', $request->boolean('is_new'));
         }
 
+        if ($request->filled('homepage_row_key')) {
+            if ($request->homepage_row_key === 'best_offers') {
+                $query->where(function ($q) {
+                    $q->where('is_on_sale', true)->orWhereColumn('price', '<', 'original_price');
+                });
+            } elseif ($request->homepage_row_key === 'new_arrivals') {
+                $query->where('is_new', true);
+            } elseif (preg_match('/^category_(\d+)$/', $request->homepage_row_key, $matches) && !$request->has('category_id') && !$request->filled('category_slug') && !$request->filled('category_name')) {
+                $query->where('category_id', (int) $matches[1]);
+            }
+
+            if (!HomepageProductRowController::hasManualOrder($request->homepage_row_key) && $request->homepage_row_key === 'best_offers') {
+                $query->orderByRaw('CASE WHEN original_price > 0 THEN (original_price - price) / original_price ELSE 0 END DESC');
+            }
+
+            $query = HomepageProductRowController::applyManualOrder($query, $request->homepage_row_key);
+        }
+
         $perPage = $request->get('per_page', 10);
         
         if ($request->has('all')) {
             return response()->json($query->get());
         }
 
-        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
+        if (!$request->filled('homepage_row_key')) {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        return response()->json($query->paginate($perPage));
     }
 
     public function show($id)
