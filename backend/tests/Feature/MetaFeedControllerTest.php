@@ -54,6 +54,19 @@ class MetaFeedControllerTest extends TestCase
         $response->assertDontSee('localhost', false);
     }
 
+    public function test_meta_feed_admin_preflight_requests_succeed(): void
+    {
+        $response = $this->options('/api/admin/meta-feed/regenerate', [], [
+            'HTTP_ORIGIN' => 'https://hellohomes.lk',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
+            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,accept,content-type',
+        ]);
+
+        $response->assertNoContent();
+        $this->assertStringContainsString('POST', $response->headers->get('Access-Control-Allow-Methods', ''));
+        $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
+    }
+
     public function test_regenerate_generates_cache_and_status_metadata_with_timestamp(): void
     {
         Config::set('app.url', 'http://localhost');
