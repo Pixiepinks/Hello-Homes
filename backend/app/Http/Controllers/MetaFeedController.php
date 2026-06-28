@@ -13,13 +13,20 @@ class MetaFeedController extends Controller
     private const CACHE_KEY = 'meta_catalog_feed_xml';
     private const META_KEY = 'meta_catalog_feed_meta';
     private const CACHE_SECONDS = 3600;
+    private const PRODUCTION_APP_URL = 'https://hellohomes.lk';
 
     public function feed(Request $request)
     {
-        $xml = Cache::remember(self::CACHE_KEY, self::CACHE_SECONDS, fn () => $this->buildFeed($request));
+        $xml = Cache::get(self::CACHE_KEY);
+        $baseUrl = $this->baseUrl($request);
+
+        if (!is_string($xml) || $xml === '' || str_contains($xml, 'localhost') || !str_contains($xml, $baseUrl)) {
+            $xml = $this->buildFeed($request);
+            Cache::put(self::CACHE_KEY, $xml, self::CACHE_SECONDS);
+        }
 
         return response($xml, 200, [
-            'Content-Type' => 'application/rss+xml; charset=UTF-8',
+            'Content-Type' => 'application/xml; charset=UTF-8',
             'Cache-Control' => 'public, max-age=' . self::CACHE_SECONDS,
         ]);
     }
@@ -40,7 +47,7 @@ class MetaFeedController extends Controller
     private function buildFeed(Request $request): string
     {
         $products = $this->feedQuery()->get();
-        $baseUrl = $this->httpsUrl(config('app.url') ?: $request->getSchemeAndHttpHost());
+        $baseUrl = $this->baseUrl($request);
 
         $writer = new XMLWriter();
         $writer->openMemory();
@@ -99,12 +106,31 @@ class MetaFeedController extends Controller
 
     private function metadata(Request $request): array
     {
-        $baseUrl = $this->httpsUrl(config('app.url') ?: $request->getSchemeAndHttpHost());
-        return Cache::get(self::META_KEY, [
+        $baseUrl = $this->baseUrl($request);
+        $metadata = Cache::get(self::META_KEY, []);
+
+        return [
             'feed_url' => $baseUrl . '/meta-feed.xml',
-            'last_generation_time' => null,
-            'product_count' => $this->feedQuery()->count(),
-        ]);
+            'last_generation_time' => $metadata['last_generation_time'] ?? null,
+            'product_count' => $metadata['product_count'] ?? $this->feedQuery()->count(),
+        ];
+    }
+
+    private function baseUrl(Request $request): string
+    {
+        $configuredUrl = config('app.url');
+        $candidate = is_string($configuredUrl) && trim($configuredUrl) !== ''
+            ? $configuredUrl
+            : $request->getSchemeAndHttpHost();
+
+        $baseUrl = $this->httpsUrl($candidate);
+        $host = parse_url($baseUrl, PHP_URL_HOST);
+
+        if (!$host || in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true)) {
+            return self::PRODUCTION_APP_URL;
+        }
+
+        return rtrim($baseUrl, '/');
     }
 
     private function feedQuery()
