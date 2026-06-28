@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderReceipt;
 use App\Models\Notification;
 use App\Models\PaymentSetting;
+use App\Services\MetaConversionsApiService;
 
 class OrderController extends Controller
 {
@@ -32,6 +33,8 @@ class OrderController extends Controller
             'items' => 'required|array',
             'nic_number' => 'nullable|string',
             'password' => 'nullable|string|min:6', // Optional password for new account
+            'event_id' => 'nullable|string|max:255',
+            'event_source_url' => 'nullable|url|max:2048',
         ]);
 
         $settings = PaymentSetting::current();
@@ -76,6 +79,8 @@ class OrderController extends Controller
         $orderData = $validated;
         unset($orderData['items']);
         unset($orderData['password']);
+        unset($orderData['event_id']);
+        unset($orderData['event_source_url']);
         $orderData['user_id'] = $user->id;
         if ($validated['payment_method'] === 'transfer') {
             $orderData['status'] = 'PENDING_PAYMENT';
@@ -93,6 +98,18 @@ class OrderController extends Controller
                 'price' => $item['price'],
             ]);
         }
+
+
+        $eventId = $validated['event_id'] ?? 'server_purchase_' . $order->id . '_' . now()->timestamp;
+        $nameParts = preg_split('/\s+/', trim($order->full_name), 2);
+        app(MetaConversionsApiService::class)->sendPurchase($order, $eventId, [
+            'email' => $order->email,
+            'phone' => $order->phone,
+            'first_name' => $nameParts[0] ?? null,
+            'last_name' => $nameParts[1] ?? null,
+            'client_ip_address' => $request->ip(),
+            'client_user_agent' => $request->userAgent(),
+        ], $validated['event_source_url'] ?? null);
 
         try {
             $subject = 'Order Confirmation - Hello Homes';

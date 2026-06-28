@@ -11,6 +11,7 @@ import '../widgets/global_layout.dart';
 import '../widgets/mobile_bottom_navigation.dart';
 import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/meta_pixel_service.dart';
 import 'payment_gateway_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -83,6 +84,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _fetchPaymentSettings();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cart = context.read<CartProvider>();
+      final items = widget.buyNowItem != null
+          ? {widget.buyNowItem!.product.id: widget.buyNowItem!}
+          : cart.items;
+      MetaPixelService.trackInitiateCheckout(items, items.values.fold<double>(0, (sum, item) => sum + (item.product.price * item.quantity)));
+
       final auth = context.read<AuthProvider>();
       if (auth.isAuthenticated && auth.user != null) {
         setState(() {
@@ -324,6 +331,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      final eventId = MetaPixelService.generateEventId();
       final itemsList = items.values.map((e) => {
         'id': e.product.id,
         'title': e.product.title,
@@ -346,6 +354,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'total_amount': totalAmount,
           'delivery_fee': deliveryFee,
           'items': itemsList,
+          'event_id': eventId,
+          'event_source_url': MetaPixelService.orderSuccessUrl(null),
         }),
       );
 
@@ -356,6 +366,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (data['token'] != null) {
           context.read<AuthProvider>().setSession(data['token'], data['user']);
         }
+        MetaPixelService.trackPurchase(items, totalAmount, eventId);
         if (widget.buyNowItem == null) {
           context.read<CartProvider>().clear();
         }

@@ -7,6 +7,7 @@ import '../models/product.dart';
 import '../utils/constants.dart';
 import '../theme/app_theme.dart';
 import '../utils/price_formatter.dart';
+import '../utils/meta_pixel_service.dart';
 import '../widgets/global_layout.dart';
 import '../widgets/mobile_bottom_navigation.dart';
 import '../providers/cart_provider.dart';
@@ -80,10 +81,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         if (decoded is Map) {
+          final product = Product.fromJson(Map<String, dynamic>.from(decoded));
           setState(() {
-            _product = Product.fromJson(Map<String, dynamic>.from(decoded));
+            _product = product;
             _isLoading = false;
           });
+          MetaPixelService.trackViewContent(product);
         } else {
           setState(() {
             _errorMessage = 'Product not found';
@@ -381,6 +384,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
+                      MetaPixelService.trackInitiateCheckout({
+                        product.id: CartItem(product: product, quantity: 1),
+                      }, product.price);
                       Navigator.push(
                         context,
                         MaterialPageRoute(

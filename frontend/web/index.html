@@ -31,8 +31,38 @@
 
   <title>Hello Homes</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Meta Pixel base code. Pixel ID can be overridden by setting window.HH_META_PIXEL_ID before this block. -->
+  <script>
+    window.HH_META_PIXEL_ID = window.HH_META_PIXEL_ID || '1282584640350629';
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+
+    window.hhMetaPixelInitialize = function(pixelId) {
+      var id = pixelId || window.HH_META_PIXEL_ID;
+      if (!id || !window.fbq) return;
+      if (!window.hhMetaPixelInitialized) {
+        window.fbq('init', id);
+        window.hhMetaPixelInitialized = true;
+      }
+    };
+
+    window.hhMetaPixelTrack = function(eventName, parameters, eventId) {
+      if (!window.fbq) return;
+      window.hhMetaPixelInitialize(window.HH_META_PIXEL_ID);
+      var options = eventId ? {eventID: eventId} : undefined;
+      window.fbq('track', eventName, parameters || {}, options);
+    };
+  </script>
 </head>
 <body>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1282584640350629&ev=PageView&noscript=1" /></noscript>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

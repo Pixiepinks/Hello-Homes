@@ -18,9 +18,11 @@ import 'screens/all_categories_screen.dart';
 import 'screens/all_products_screen.dart';
 import 'screens/upload_slip_screen.dart';
 import 'widgets/cookie_consent_banner.dart';
+import 'utils/meta_pixel_service.dart';
 
 void main() {
   usePathUrlStrategy();
+  MetaPixelService.initialize();
   runApp(const HelloHomesApp());
 }
 
@@ -46,6 +48,7 @@ GoRouter _buildRouter(AuthProvider authProvider) {
 
       return null;
     },
+    observers: [MetaRouteObserver()],
     routes: [
       GoRoute(
         path: '/',
