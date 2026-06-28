@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:async';
 import '../theme/app_theme.dart';
 import '../models/product.dart';
+import '../utils/meta_pixel_service.dart';
 
 class ProductSearchBar extends StatefulWidget {
   final bool isMobile;
@@ -68,6 +69,7 @@ class _ProductSearchBarState extends State<ProductSearchBar> {
     _showOverlay();
 
     try {
+      MetaPixelService.trackSearch(query);
       final response = await http.get(
         Uri.parse('${AppConstants.apiUrl}/products?search=$query&per_page=5'),
         headers: {'Accept': 'application/json'},
@@ -257,6 +259,7 @@ class _ProductSearchBarState extends State<ProductSearchBar> {
           onSubmitted: (value) {
             if (value.isNotEmpty) {
               _hideDropdown();
+              MetaPixelService.trackSearch(value);
               context.go('/products?search=$value');
             }
           },
