@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\PaymentSettingController;
 use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\ChildCategoryController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\HomepageProductRowController;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,6 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // UI Settings (Admin)
         Route::put('/ui-settings', [UiSettingController::class, 'update']);
+        Route::get('/admin/homepage-rows', [HomepageProductRowController::class, 'index']);
+        Route::get('/admin/homepage-rows/{rowKey}/products', [HomepageProductRowController::class, 'products']);
+        Route::post('/admin/homepage-rows/{rowKey}/products/order', [HomepageProductRowController::class, 'updateOrder']);
+        Route::post('/admin/homepage-rows/{rowKey}/products/reset-order', [HomepageProductRowController::class, 'resetOrder']);
         Route::post('/hero-banners/order', [HeroBannerController::class, 'updateOrder']);
         Route::apiResource('hero-banners', HeroBannerController::class)->except(['index', 'show']);
         Route::post('/promotion-banners/{promotionBanner}/end', [PromotionBannerController::class, 'end']);
