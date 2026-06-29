@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Product> _products = [];
   List<Product> _bestOfferRowProducts = [];
   List<Product> _newArrivalRowProducts = [];
+  List<Product> _trendingProducts = [];
   final Map<String, List<Product>> _categorySectionProducts = {};
   List<Category> _categories = [];
   final Map<String, Category> _homepageCategorySections = {};
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchProducts();
+    _fetchTrendingProducts();
     _fetchHomepageSystemRowProducts('best_offers');
     _fetchHomepageSystemRowProducts('new_arrivals');
     _fetchCategories();
@@ -67,6 +69,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _fetchTrendingProducts() async {
+    try {
+      final products = await _fetchAllProducts(
+        Uri.parse('${AppConstants.apiUrl}/products?all=1&active=1'),
+      );
+      if (mounted) {
+        setState(() {
+          _trendingProducts = products
+              .where((product) => product.isActive)
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<List<Product>> _fetchAllProducts(Uri initialUri) async {
+    final products = <Product>[];
+    Uri? nextUri = initialUri;
+
+    while (nextUri != null) {
+      final response = await http.get(nextUri);
+      if (response.statusCode != 200) {
+        break;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is List) {
+        products.addAll(decoded.map((item) => Product.fromJson(item)));
+        break;
+      }
+
+      if (decoded is Map<String, dynamic>) {
+        final pageData = decoded['data'];
+        if (pageData is List) {
+          products.addAll(pageData.map((item) => Product.fromJson(item)));
+        }
+
+        final nextPageUrl = decoded['next_page_url']?.toString();
+        nextUri = nextPageUrl == null || nextPageUrl.isEmpty
+            ? null
+            : Uri.parse(nextPageUrl);
+        continue;
+      }
+
+      break;
+    }
+
+    return products;
+  }
 
 
   Future<void> _fetchHomepageSystemRowProducts(String rowKey) async {
@@ -279,10 +330,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return _newArrivalRowProducts.take(12).toList();
     }
     return _products.where((product) => product.isNew).take(12).toList();
-  }
-
-  List<Product> get _trendingProducts {
-    return _products.where((product) => product.isActive).take(12).toList();
   }
 
   Widget _buildTrendingNowSection(BuildContext context) {
