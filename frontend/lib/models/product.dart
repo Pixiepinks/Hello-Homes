@@ -23,6 +23,7 @@ class Product {
   final String childCategoryName;
   final int? brandId;
   final String brandName;
+  final bool isActive;
 
   Product({
     required this.id,
@@ -47,6 +48,7 @@ class Product {
     this.childCategoryName = '',
     this.brandId,
     this.brandName = '',
+    this.isActive = true,
   });
 
   List<String> get galleryImages {
@@ -90,6 +92,12 @@ class Product {
        } catch (_) {}
     }
 
+    final activeValue = json['is_active'];
+    final isActive = activeValue == null ||
+        activeValue == 1 ||
+        activeValue == true ||
+        activeValue.toString().toLowerCase() == 'true';
+
     return Product(
       id: json['id'].toString(),
       title: json['title']?.toString() ?? '',
@@ -121,6 +129,7 @@ class Product {
       brandName: (json['brand'] != null && json['brand'] is Map)
           ? (json['brand']['name']?.toString() ?? '')
           : '',
+      isActive: isActive,
     );
   }
 }
