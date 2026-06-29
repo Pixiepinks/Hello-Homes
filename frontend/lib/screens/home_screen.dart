@@ -1,20 +1,23 @@
-import '../utils/constants.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../models/product.dart';
+import 'package:provider/provider.dart';
+
 import '../models/category.dart';
-import '../widgets/product_card.dart';
-import '../widgets/product_layout.dart';
-import '../widgets/global_layout.dart';
-import '../widgets/mobile_bottom_navigation.dart';
-import '../theme/app_theme.dart';
+import '../models/product.dart';
 import '../models/ui_settings.dart';
 import '../providers/ui_settings_provider.dart';
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../theme/app_theme.dart';
+import '../utils/constants.dart';
+import '../widgets/global_layout.dart';
+import '../widgets/mobile_bottom_navigation.dart';
+import '../widgets/product_card.dart';
+import '../widgets/product_layout.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -421,7 +424,7 @@ class _TrendingProductMarquee extends StatefulWidget {
 class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  double _dragOffset = 0;
+  double _manualScrollOffset = 0;
   bool _isHovering = false;
   bool _isPointerDown = false;
 
@@ -487,8 +490,10 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
         final spacing = isMobile ? 10.0 : 14.0;
         final height = isMobile ? 240.0 : (isTablet ? 270.0 : 300.0);
         final stride = itemWidth + spacing;
-        final loopWidth = widget.products.length * stride;
-        final copyCount = loopWidth > 0 ? (width / loopWidth).ceil() + 2 : 2;
+        final singleListWidth = widget.products.length * stride;
+        final copyCount = singleListWidth > 0
+            ? max(3, (width * 3 / singleListWidth).ceil())
+            : 3;
         final repeatedProducts = [
           for (var i = 0; i < copyCount; i++) ...widget.products,
         ];
@@ -519,9 +524,11 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
               behavior: HitTestBehavior.translucent,
               onHorizontalDragStart: (_) => _pause(),
               onHorizontalDragUpdate: (details) {
-                if (loopWidth <= 0) return;
+                if (singleListWidth <= 0) return;
                 setState(() {
-                  _dragOffset = (_dragOffset + details.delta.dx) % loopWidth;
+                  _manualScrollOffset =
+                      (_manualScrollOffset - details.delta.dx) %
+                          singleListWidth;
                 });
               },
               onHorizontalDragEnd: (_) {
@@ -538,10 +545,12 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
                   child: AnimatedBuilder(
                     animation: _controller,
                     builder: (context, child) {
-                      final animatedOffset = -(_controller.value * loopWidth);
-                      final offset = (animatedOffset + _dragOffset) % loopWidth;
+                      final scrollDistance =
+                          ((_controller.value * singleListWidth) +
+                                  _manualScrollOffset) %
+                              singleListWidth;
                       return Transform.translate(
-                        offset: Offset(offset, 0),
+                        offset: Offset(-scrollDistance, 0),
                         child: child,
                       );
                     },
