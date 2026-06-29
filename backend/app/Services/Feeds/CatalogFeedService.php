@@ -20,6 +20,25 @@ class CatalogFeedService
 {
     private const PRODUCTION_APP_URL = 'https://hellohomes.lk';
 
+    private const DEFAULT_GOOGLE_PRODUCT_CATEGORY = 'Home & Garden';
+
+    private const GOOGLE_PRODUCT_CATEGORY_MAP = [
+        'kitchen appliances' => 'Home & Garden > Kitchen & Dining > Kitchen Appliances',
+        'rice cookers' => 'Home & Garden > Kitchen & Dining > Rice Cookers',
+        'electric kettles' => 'Home & Garden > Kitchen & Dining > Electric Kettles',
+        'air fryers' => 'Home & Garden > Kitchen & Dining > Small Appliances',
+        'blenders' => 'Home & Garden > Kitchen & Dining > Blenders',
+        'cooling & climate' => 'Home & Garden > Heating, Cooling & Air Quality',
+        'stand fans' => 'Home & Garden > Heating, Cooling & Air Quality > Fans',
+        'wall fans' => 'Home & Garden > Heating, Cooling & Air Quality > Fans',
+        'air coolers' => 'Home & Garden > Heating, Cooling & Air Quality > Air Conditioners',
+        'medical & healthcare' => 'Health & Beauty > Medical Supplies & Equipment',
+        'wheelchairs' => 'Health & Beauty > Medical Supplies & Equipment',
+        'hospital beds' => 'Health & Beauty > Medical Supplies & Equipment',
+        'walking sticks' => 'Health & Beauty > Medical Supplies & Equipment',
+        'walking aids' => 'Health & Beauty > Medical Supplies & Equipment',
+    ];
+
     public function catalogProducts(string $baseUrl)
     {
         return $this->feedQuery()->get()
@@ -130,6 +149,35 @@ class CatalogFeedService
             }
         }
         return '';
+    }
+
+    public function tiktokProductType(Product $product): string
+    {
+        return $this->productType($product) ?: 'Hello Homes';
+    }
+
+    public function tiktokGoogleProductCategory(Product $product): string
+    {
+        $configuredCategory = $this->googleProductCategory($product);
+        if ($configuredCategory !== '') {
+            return $configuredCategory;
+        }
+
+        foreach ([$product->childCategory?->name, $product->subcategory?->name, $product->category?->title] as $categoryName) {
+            $mappedCategory = $this->mappedGoogleProductCategory($categoryName);
+            if ($mappedCategory !== '') {
+                return $mappedCategory;
+            }
+        }
+
+        return self::DEFAULT_GOOGLE_PRODUCT_CATEGORY;
+    }
+
+    private function mappedGoogleProductCategory(?string $categoryName): string
+    {
+        $key = mb_strtolower($this->plainText($categoryName));
+
+        return self::GOOGLE_PRODUCT_CATEGORY_MAP[$key] ?? '';
     }
 
     public function brand(Product $product): string
