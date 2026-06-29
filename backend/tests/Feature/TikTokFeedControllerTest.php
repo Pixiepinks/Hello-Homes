@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\TikTokFeedController;
 use App\Models\Product;
 use Tests\TestCase;
 
@@ -40,10 +41,10 @@ class TikTokFeedControllerTest extends TestCase
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
         $rows = $this->csvRows($response->getContent());
         $this->assertSame($this->headers(), $rows[0]);
-        $this->assertSame('Classic Kettle', $rows[1][1]);
-        $this->assertSame('2350.00 LKR', $rows[1][5]);
-        $this->assertSame('', $rows[1][6]);
-        $this->assertSame('Hello Homes', $rows[1][9]);
+        $this->assertSame('Classic Kettle', $rows[1][$this->column('title')]);
+        $this->assertSame('2350.00 LKR', $rows[1][$this->column('price')]);
+        $this->assertSame('', $rows[1][$this->column('sale_price')]);
+        $this->assertSame('Hello Homes', $rows[1][$this->column('brand')]);
     }
 
     public function test_discounted_product_outputs_price_and_sale_price_with_currency_formatting(): void
@@ -52,8 +53,8 @@ class TikTokFeedControllerTest extends TestCase
 
         $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
 
-        $this->assertSame('2990.00 LKR', $row[5]);
-        $this->assertSame('2350.00 LKR', $row[6]);
+        $this->assertSame('2990.00 LKR', $row[$this->column('price')]);
+        $this->assertSame('2350.00 LKR', $row[$this->column('sale_price')]);
     }
 
     public function test_null_original_price_and_equal_original_price_leave_sale_price_empty(): void
@@ -63,10 +64,10 @@ class TikTokFeedControllerTest extends TestCase
 
         $rows = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent());
 
-        $this->assertSame('', $rows[1][6]);
-        $this->assertSame('', $rows[2][6]);
-        $this->assertSame('1000.00 LKR', $rows[1][5]);
-        $this->assertSame('1000.00 LKR', $rows[2][5]);
+        $this->assertSame('', $rows[1][$this->column('sale_price')]);
+        $this->assertSame('', $rows[2][$this->column('sale_price')]);
+        $this->assertSame('1000.00 LKR', $rows[1][$this->column('price')]);
+        $this->assertSame('1000.00 LKR', $rows[2][$this->column('price')]);
     }
 
     public function test_invalid_price_missing_image_and_inactive_products_are_skipped(): void
@@ -79,7 +80,7 @@ class TikTokFeedControllerTest extends TestCase
         $rows = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent());
 
         $this->assertCount(2, $rows);
-        $this->assertSame('Valid Product', $rows[1][1]);
+        $this->assertSame('Valid Product', $rows[1][$this->column('title')]);
     }
 
 
@@ -94,10 +95,10 @@ class TikTokFeedControllerTest extends TestCase
 
         $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
 
-        $this->assertSame('Kitchen Appliances > Rice Cookers', $row[10]);
-        $this->assertSame('Home & Garden > Kitchen & Dining > Rice Cookers', $row[11]);
-        $this->assertNotSame('', $row[10]);
-        $this->assertNotSame('', $row[11]);
+        $this->assertSame('Kitchen Appliances > Rice Cookers', $row[$this->column('product_type')]);
+        $this->assertSame('Home & Garden > Kitchen & Dining > Rice Cookers', $row[$this->column('google_product_category')]);
+        $this->assertNotSame('', $row[$this->column('product_type')]);
+        $this->assertNotSame('', $row[$this->column('google_product_category')]);
     }
 
     public function test_tiktok_google_product_category_uses_parent_mapping_when_child_has_no_mapping(): void
@@ -111,10 +112,10 @@ class TikTokFeedControllerTest extends TestCase
 
         $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
 
-        $this->assertSame('Kitchen Appliances > Unmapped Specialty Cookers', $row[10]);
-        $this->assertSame('Home & Garden > Kitchen & Dining > Kitchen Appliances', $row[11]);
-        $this->assertNotSame('', $row[10]);
-        $this->assertNotSame('', $row[11]);
+        $this->assertSame('Kitchen Appliances > Unmapped Specialty Cookers', $row[$this->column('product_type')]);
+        $this->assertSame('Home & Garden > Kitchen & Dining > Kitchen Appliances', $row[$this->column('google_product_category')]);
+        $this->assertNotSame('', $row[$this->column('product_type')]);
+        $this->assertNotSame('', $row[$this->column('google_product_category')]);
     }
 
     public function test_tiktok_category_columns_never_empty_when_product_has_no_category(): void
@@ -123,8 +124,8 @@ class TikTokFeedControllerTest extends TestCase
 
         $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
 
-        $this->assertSame('Hello Homes', $row[10]);
-        $this->assertSame('Home & Garden', $row[11]);
+        $this->assertSame('Hello Homes', $row[$this->column('product_type')]);
+        $this->assertSame('Home & Garden', $row[$this->column('google_product_category')]);
     }
 
     public function test_csv_escaping_for_commas_quotes_and_html_stripping(): void
@@ -139,10 +140,81 @@ class TikTokFeedControllerTest extends TestCase
         $this->assertStringContainsString('"Large ""Chef"", Kettle"', $csv);
         $this->assertStringContainsString('"Best, ""fast"" kettle"', $csv);
         $row = $this->csvRows($csv)[1];
-        $this->assertSame('12.50 LKR', $row[5]);
-        $this->assertSame('Best, "fast" kettle', $row[2]);
+        $this->assertSame('12.50 LKR', $row[$this->column('price')]);
+        $this->assertSame('Best, "fast" kettle', $row[$this->column('description')]);
     }
 
+
+    public function test_tiktok_csv_matches_official_template_structure_and_required_field_rules(): void
+    {
+        Product::create($this->product([
+            'sku' => 'SKU-123',
+            'title' => 'Template Product',
+            'price' => 1500,
+            'original_price' => 2000,
+            'gtin' => '1234567890123',
+            'mpn' => 'MPN-456',
+            'color' => 'Blue',
+            'material' => 'Steel',
+            'pattern' => 'Solid',
+        ]));
+
+        $csv = $this->get('/feeds/tiktok.csv')->getContent();
+        $rows = $this->csvRows($csv);
+        $header = $rows[0];
+        $row = $rows[1];
+
+        $this->assertSame(44, count($header));
+        $this->assertSame(TikTokFeedController::OFFICIAL_HEADERS, $header);
+        $this->assertSame(TikTokFeedController::OFFICIAL_HEADERS, array_values($header));
+        $this->assertSame(count(TikTokFeedController::OFFICIAL_HEADERS), count($row));
+        $this->assertSame('SKU-123', $row[$this->column('sku_id')]);
+        $this->assertNotSame('', $row[$this->column('title')]);
+        $this->assertNotSame('', $row[$this->column('description')]);
+        $this->assertContains($row[$this->column('availability')], ['in stock', 'out of stock']);
+        $this->assertSame('new', $row[$this->column('condition')]);
+        $this->assertMatchesRegularExpression('/^\d+\.\d{2} LKR$/', $row[$this->column('price')]);
+        $this->assertSame('1500.00 LKR', $row[$this->column('sale_price')]);
+        $this->assertNotSame('', $row[$this->column('link')]);
+        $this->assertNotSame('', $row[$this->column('image_link')]);
+        $this->assertNotSame('', $row[$this->column('brand')]);
+        $this->assertNotSame('', $row[$this->column('product_type')]);
+        $this->assertNotSame('', $row[$this->column('google_product_category')]);
+        $this->assertSame('1', $row[$this->column('item_group_id')]);
+        $this->assertSame('unisex', $row[$this->column('gender')]);
+        $this->assertSame('adult', $row[$this->column('age_group')]);
+        $this->assertSame('', $row[$this->column('video_link')]);
+        $this->assertSame('', $row[$this->column('shipping')]);
+        $this->assertSame('', $row[$this->column('shipping_weight')]);
+        $this->assertSame('1234567890123', $row[$this->column('gtin')]);
+        $this->assertSame('MPN-456', $row[$this->column('mpn')]);
+        $this->assertSame('Blue', $row[$this->column('color')]);
+        $this->assertSame('Steel', $row[$this->column('material')]);
+        $this->assertSame('Solid', $row[$this->column('pattern')]);
+        $this->assertSame(mb_convert_encoding($csv, 'UTF-8', 'UTF-8'), $csv);
+    }
+
+
+    public function test_tiktok_header_validation_throws_when_generated_header_differs_from_template(): void
+    {
+        $controller = app(TikTokFeedController::class);
+        $method = new \ReflectionMethod($controller, 'assertOfficialHeader');
+        $method->setAccessible(true);
+
+        $this->expectException(\RuntimeException::class);
+        $method->invoke($controller, array_merge(['unexpected_column'], TikTokFeedController::OFFICIAL_HEADERS));
+    }
+
+    public function test_tiktok_template_summary_reports_no_missing_extra_or_order_differences(): void
+    {
+        $summary = TikTokFeedController::templateSummary();
+
+        $this->assertSame(44, $summary['total_template_columns']);
+        $this->assertSame(44, $summary['generated_columns']);
+        $this->assertSame([], $summary['missing_columns']);
+        $this->assertSame([], $summary['extra_columns']);
+        $this->assertTrue($summary['header_order_verified']);
+    }
 
     private function createHierarchy(string $category, ?string $subcategory = null, ?string $childCategory = null): array
     {
@@ -194,7 +266,12 @@ class TikTokFeedControllerTest extends TestCase
 
     private function headers(): array
     {
-        return ['sku_id', 'title', 'description', 'availability', 'condition', 'price', 'sale_price', 'link', 'image_link', 'brand', 'product_type', 'google_product_category', 'gtin', 'mpn', 'color', 'size', 'material', 'pattern', 'additional_image_link'];
+        return TikTokFeedController::OFFICIAL_HEADERS;
+    }
+
+    private function column(string $name): int
+    {
+        return array_search($name, $this->headers(), true);
     }
 
     private function createTables(): void
