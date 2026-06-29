@@ -82,6 +82,51 @@ class TikTokFeedControllerTest extends TestCase
         $this->assertSame('Valid Product', $rows[1][1]);
     }
 
+
+    public function test_tiktok_category_columns_are_populated_from_hierarchy_and_mapping(): void
+    {
+        $ids = $this->createHierarchy('Kitchen Appliances', 'Rice Cookers');
+        Product::create($this->product([
+            'title' => 'Rice Cooker',
+            'category_id' => $ids['category_id'],
+            'subcategory_id' => $ids['subcategory_id'],
+        ]));
+
+        $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
+
+        $this->assertSame('Kitchen Appliances > Rice Cookers', $row[10]);
+        $this->assertSame('Home & Garden > Kitchen & Dining > Rice Cookers', $row[11]);
+        $this->assertNotSame('', $row[10]);
+        $this->assertNotSame('', $row[11]);
+    }
+
+    public function test_tiktok_google_product_category_uses_parent_mapping_when_child_has_no_mapping(): void
+    {
+        $ids = $this->createHierarchy('Kitchen Appliances', 'Unmapped Specialty Cookers');
+        Product::create($this->product([
+            'title' => 'Specialty Cooker',
+            'category_id' => $ids['category_id'],
+            'subcategory_id' => $ids['subcategory_id'],
+        ]));
+
+        $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
+
+        $this->assertSame('Kitchen Appliances > Unmapped Specialty Cookers', $row[10]);
+        $this->assertSame('Home & Garden > Kitchen & Dining > Kitchen Appliances', $row[11]);
+        $this->assertNotSame('', $row[10]);
+        $this->assertNotSame('', $row[11]);
+    }
+
+    public function test_tiktok_category_columns_never_empty_when_product_has_no_category(): void
+    {
+        Product::create($this->product(['title' => 'Uncategorized Product']));
+
+        $row = $this->csvRows($this->get('/feeds/tiktok.csv')->getContent())[1];
+
+        $this->assertSame('Hello Homes', $row[10]);
+        $this->assertSame('Home & Garden', $row[11]);
+    }
+
     public function test_csv_escaping_for_commas_quotes_and_html_stripping(): void
     {
         Product::create($this->product([
@@ -96,6 +141,27 @@ class TikTokFeedControllerTest extends TestCase
         $row = $this->csvRows($csv)[1];
         $this->assertSame('12.50 LKR', $row[5]);
         $this->assertSame('Best, "fast" kettle', $row[2]);
+    }
+
+
+    private function createHierarchy(string $category, ?string $subcategory = null, ?string $childCategory = null): array
+    {
+        $categoryId = DB::table('categories')->insertGetId(['title' => $category]);
+        $subcategoryId = $subcategory === null ? null : DB::table('subcategories')->insertGetId([
+            'name' => $subcategory,
+            'category_id' => $categoryId,
+        ]);
+        $childCategoryId = $childCategory === null ? null : DB::table('child_categories')->insertGetId([
+            'name' => $childCategory,
+            'category_id' => $categoryId,
+            'subcategory_id' => $subcategoryId,
+        ]);
+
+        return [
+            'category_id' => $categoryId,
+            'subcategory_id' => $subcategoryId,
+            'child_category_id' => $childCategoryId,
+        ];
     }
 
     private function product(array $overrides = []): array
@@ -141,11 +207,14 @@ class TikTokFeedControllerTest extends TestCase
         Schema::create('subcategories', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
+            $table->foreignId('category_id')->nullable();
             $table->string('google_product_category')->nullable();
         });
         Schema::create('child_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
+            $table->foreignId('category_id')->nullable();
+            $table->foreignId('subcategory_id')->nullable();
             $table->string('google_product_category')->nullable();
         });
         Schema::create('brands', function (Blueprint $table) {

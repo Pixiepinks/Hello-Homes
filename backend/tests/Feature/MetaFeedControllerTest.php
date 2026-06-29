@@ -145,6 +145,28 @@ class MetaFeedControllerTest extends TestCase
         $this->assertSame(1, substr_count($xml, '<g:sale_price>'));
     }
 
+
+    public function test_meta_feed_keeps_existing_empty_google_category_behavior(): void
+    {
+        Config::set('app.url', 'https://hellohomes.lk');
+        Product::create([
+            'title' => 'Unmapped Meta Product',
+            'subtitle' => 'No mapped category should be added by Meta feed',
+            'image_url' => '/storage/products/unmapped-meta-product.jpg',
+            'price' => 1000,
+            'is_active' => true,
+            'stock_quantity' => 5,
+        ]);
+
+        $response = $this->get('/meta-feed.xml');
+
+        $response->assertOk();
+        $xml = $response->getContent();
+        $this->assertStringContainsString('<title>Unmapped Meta Product</title>', $xml);
+        $this->assertStringNotContainsString('<g:google_product_category>', $xml);
+        $this->assertStringNotContainsString('Home & Garden', $xml);
+    }
+
     private function createMetaFeedTables(): void
     {
         Schema::create('categories', function (Blueprint $table) {
