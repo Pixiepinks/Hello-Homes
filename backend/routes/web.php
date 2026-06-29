@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MetaFeedController;
+use App\Http\Controllers\TikTokFeedController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,7 @@ use App\Http\Controllers\MetaFeedController;
 */
 
 Route::get('/meta-feed.xml', [MetaFeedController::class, 'feed']);
+Route::get('/feeds/tiktok.csv', [TikTokFeedController::class, 'feed']);
 
 Route::get('/{path?}', function () {
     $index = public_path('index.html');

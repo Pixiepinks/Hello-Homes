@@ -41,6 +41,14 @@ handle /meta-feed.xml {
   }
 }
 
+handle /feeds/tiktok.csv {
+  reverse_proxy {$BACKEND_URL} {
+    header_up Host {upstream_hostport}
+    header_up X-Forwarded-Host {host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+}
+
 handle {
   root * /srv
   try_files {path} {path}/ /index.html
