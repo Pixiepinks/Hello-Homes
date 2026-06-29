@@ -64,6 +64,10 @@ class ProductController extends Controller
 
         if ($request->has('active')) {
             $query->where('is_active', $request->boolean('active'));
+
+            if ($request->boolean('active')) {
+                $query->whereNotIn('status', ['draft', 'hidden', 'disabled', 'inactive', 'deleted']);
+            }
         }
 
         if ($request->filled('homepage_row_key')) {
