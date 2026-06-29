@@ -29,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Product> _products = [];
   List<Product> _bestOfferRowProducts = [];
-  List<Product> _trendingProducts = [];
   List<Product> _newArrivalRowProducts = [];
   final Map<String, List<Product>> _categorySectionProducts = {};
   List<Category> _categories = [];
@@ -41,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchProducts();
-    _fetchTrendingProducts();
     _fetchHomepageSystemRowProducts('best_offers');
     _fetchHomepageSystemRowProducts('new_arrivals');
     _fetchCategories();
@@ -67,24 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-  Future<void> _fetchTrendingProducts() async {
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConstants.apiUrl}/products?all=1&active=1'),
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _trendingProducts = data
-                .map((item) => Product.fromJson(item))
-                .where((product) => product.isActive)
-                .toList();
-          });
-        }
-      }
-    } catch (_) {}
-  }
 
   Future<void> _fetchHomepageSystemRowProducts(String rowKey) async {
     try {
@@ -189,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const _HomepagePromoBanner(),
                   const _ExistingHomepageBanner(),
                   if (_trendingProducts.isNotEmpty) ...[
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 32),
                     _buildSectionTitle(context, 'Trending Now'),
                     const SizedBox(height: 16),
                     _buildTrendingNowSection(context),
@@ -296,6 +276,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return _newArrivalRowProducts.take(12).toList();
     }
     return _products.where((product) => product.isNew).take(12).toList();
+  }
+
+  List<Product> get _trendingProducts {
+    return _products.where((product) => product.isActive).take(12).toList();
   }
 
   Widget _buildTrendingNowSection(BuildContext context) {
@@ -444,8 +428,8 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: _loopDuration())
-      ..repeat();
+    _controller = AnimationController(vsync: this, duration: _loopDuration());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
   }
 
   @override
@@ -454,7 +438,8 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
     if (oldWidget.products.length != widget.products.length) {
       _controller
         ..duration = _loopDuration()
-        ..repeat();
+        ..reset();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
     }
   }
 
@@ -469,20 +454,32 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
     return Duration(seconds: seconds);
   }
 
+  void _startAutoScroll() {
+    if (!mounted || widget.products.isEmpty || _isHovering || _isPointerDown) {
+      return;
+    }
+
+    if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
   void _pause() {
     _controller.stop(canceled: false);
   }
 
   void _resumeIfIdle() {
-    if (!_isHovering && !_isPointerDown && !_controller.isAnimating) {
-      _controller.repeat();
-    }
+    _startAutoScroll();
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (widget.products.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         final width = constraints.maxWidth;
         final isMobile = width < 600;
         final isTablet = width >= 600 && width < 1000;
@@ -522,6 +519,7 @@ class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
               behavior: HitTestBehavior.translucent,
               onHorizontalDragStart: (_) => _pause(),
               onHorizontalDragUpdate: (details) {
+                if (loopWidth <= 0) return;
                 setState(() {
                   _dragOffset = (_dragOffset + details.delta.dx) % loopWidth;
                 });
