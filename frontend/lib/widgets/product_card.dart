@@ -9,11 +9,13 @@ import '../providers/ui_settings_provider.dart';
 class HoverProductCard extends StatefulWidget {
   final Product product;
   final VoidCallback onTap;
+  final bool compact;
 
   const HoverProductCard({
     super.key,
     required this.product,
     required this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -27,7 +29,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
   Widget build(BuildContext context) {
     final uiSettings = context.watch<UiSettingsProvider>().settings;
     final width = MediaQuery.of(context).size.width;
-    final isCompactCard = width < 900;
+    final isCompactCard = widget.compact || width < 900;
     final badgeInset = isCompactCard ? 8.0 : 12.0;
     final badgeHorizontalPadding = isCompactCard ? 6.0 : 8.0;
     final badgeVerticalPadding = isCompactCard ? 3.0 : 4.0;
@@ -38,22 +40,22 @@ class _HoverProductCardState extends State<HoverProductCard> {
     final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: AppTheme.textMuted,
           fontWeight: FontWeight.w600,
-          fontSize: isCompactCard ? 10 : null,
+          fontSize: widget.compact ? 9 : (isCompactCard ? 10 : null),
           letterSpacing: isCompactCard ? 0.8 : 1.2,
         );
     final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
-          fontSize: isCompactCard ? 13 : 14,
+          fontSize: widget.compact ? 12 : (isCompactCard ? 13 : 14),
         );
     final originalPriceStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: AppTheme.textMuted,
           decoration: TextDecoration.lineThrough,
-          fontSize: isCompactCard ? 11 : 13,
+          fontSize: widget.compact ? 10 : (isCompactCard ? 11 : 13),
         );
     final sellingPriceStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
           color: AppTheme.primaryBlue,
           fontWeight: FontWeight.bold,
-          fontSize: isCompactCard ? 14 : 16,
+          fontSize: widget.compact ? 13 : (isCompactCard ? 14 : 16),
         );
 
     return MouseRegion(
@@ -100,7 +102,10 @@ class _HoverProductCardState extends State<HoverProductCard> {
                           imageUrl: widget.product.imageUrl,
                           fit: BoxFit.contain,
                           placeholder: (context, url) => Container(color: Colors.white),
-                          errorWidget: (context, url, error) => const Icon(Icons.error),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.image_not_supported_outlined,
+                            color: AppTheme.textMuted,
+                          ),
                         ),
                       ),
                     ),
@@ -192,15 +197,18 @@ class _HoverProductCardState extends State<HoverProductCard> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Flexible(
-                            child: Text(
-                              formatPrice(widget.product.originalPrice, currencySymbol: uiSettings.currencySymbol),
-                              style: originalPriceStyle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          if (widget.product.originalPrice > 0 &&
+                              widget.product.originalPrice != widget.product.price) ...[
+                            Flexible(
+                              child: Text(
+                                formatPrice(widget.product.originalPrice, currencySymbol: uiSettings.currencySymbol),
+                                style: originalPriceStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
+                            const SizedBox(width: 6),
+                          ],
                           Flexible(
                             child: Text(
                               formatPrice(widget.product.price, currencySymbol: uiSettings.currencySymbol),

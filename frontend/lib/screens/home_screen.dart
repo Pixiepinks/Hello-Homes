@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Product> _products = [];
   List<Product> _bestOfferRowProducts = [];
+  List<Product> _trendingProducts = [];
   List<Product> _newArrivalRowProducts = [];
   final Map<String, List<Product>> _categorySectionProducts = {};
   List<Category> _categories = [];
@@ -40,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchProducts();
+    _fetchTrendingProducts();
     _fetchHomepageSystemRowProducts('best_offers');
     _fetchHomepageSystemRowProducts('new_arrivals');
     _fetchCategories();
@@ -64,6 +66,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
+  Future<void> _fetchTrendingProducts() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.apiUrl}/products?all=1&active=1'),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _trendingProducts = data
+                .map((item) => Product.fromJson(item))
+                .where((product) => product.isActive)
+                .toList();
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   Future<void> _fetchHomepageSystemRowProducts(String rowKey) async {
     try {
@@ -167,6 +188,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildAutoSlider(context),
                   const _HomepagePromoBanner(),
                   const _ExistingHomepageBanner(),
+                  if (_trendingProducts.isNotEmpty) ...[
+                    const SizedBox(height: 60),
+                    _buildSectionTitle(context, 'Trending Now'),
+                    const SizedBox(height: 16),
+                    _buildTrendingNowSection(context),
+                  ],
+                  const SizedBox(height: 60),
                   _buildSectionTitle(context, 'Best Offers'),
                   const SizedBox(height: 16),
                   _buildBestOffersSection(context),
@@ -268,6 +296,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return _newArrivalRowProducts.take(12).toList();
     }
     return _products.where((product) => product.isNew).take(12).toList();
+  }
+
+  Widget _buildTrendingNowSection(BuildContext context) {
+    if (_trendingProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: _TrendingProductMarquee(products: _trendingProducts),
+    );
   }
 
   Widget _buildBestOffersSection(BuildContext context) {
@@ -382,6 +421,154 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _TrendingProductMarquee extends StatefulWidget {
+  final List<Product> products;
+
+  const _TrendingProductMarquee({required this.products});
+
+  @override
+  State<_TrendingProductMarquee> createState() => _TrendingProductMarqueeState();
+}
+
+class _TrendingProductMarqueeState extends State<_TrendingProductMarquee>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  double _dragOffset = 0;
+  bool _isHovering = false;
+  bool _isPointerDown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _loopDuration())
+      ..repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TrendingProductMarquee oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.products.length != widget.products.length) {
+      _controller
+        ..duration = _loopDuration()
+        ..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Duration _loopDuration() {
+    final seconds = (widget.products.length * 9).clamp(60, 90).toInt();
+    return Duration(seconds: seconds);
+  }
+
+  void _pause() {
+    _controller.stop(canceled: false);
+  }
+
+  void _resumeIfIdle() {
+    if (!_isHovering && !_isPointerDown && !_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isMobile = width < 600;
+        final isTablet = width >= 600 && width < 1000;
+        final itemWidth = isMobile ? 142.0 : (isTablet ? 168.0 : 190.0);
+        final spacing = isMobile ? 10.0 : 14.0;
+        final height = isMobile ? 240.0 : (isTablet ? 270.0 : 300.0);
+        final stride = itemWidth + spacing;
+        final loopWidth = widget.products.length * stride;
+        final copyCount = loopWidth > 0 ? (width / loopWidth).ceil() + 2 : 2;
+        final repeatedProducts = [
+          for (var i = 0; i < copyCount; i++) ...widget.products,
+        ];
+
+        return MouseRegion(
+          onEnter: (_) {
+            _isHovering = true;
+            _pause();
+          },
+          onExit: (_) {
+            _isHovering = false;
+            _resumeIfIdle();
+          },
+          child: Listener(
+            onPointerDown: (_) {
+              _isPointerDown = true;
+              _pause();
+            },
+            onPointerUp: (_) {
+              _isPointerDown = false;
+              _resumeIfIdle();
+            },
+            onPointerCancel: (_) {
+              _isPointerDown = false;
+              _resumeIfIdle();
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart: (_) => _pause(),
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _dragOffset = (_dragOffset + details.delta.dx) % loopWidth;
+                });
+              },
+              onHorizontalDragEnd: (_) {
+                _isPointerDown = false;
+                _resumeIfIdle();
+              },
+              onHorizontalDragCancel: () {
+                _isPointerDown = false;
+                _resumeIfIdle();
+              },
+              child: ClipRect(
+                child: SizedBox(
+                  height: height,
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      final animatedOffset = -(_controller.value * loopWidth);
+                      final offset = (animatedOffset + _dragOffset) % loopWidth;
+                      return Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: child,
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        for (final product in repeatedProducts) ...[
+                          SizedBox(
+                            width: itemWidth,
+                            child: HoverProductCard(
+                              product: product,
+                              compact: true,
+                              onTap: () => context.go('/product/${product.id}'),
+                            ),
+                          ),
+                          SizedBox(width: spacing),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

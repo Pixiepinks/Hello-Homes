@@ -62,6 +62,10 @@ class ProductController extends Controller
             $query->where('is_new', $request->boolean('is_new'));
         }
 
+        if ($request->has('active')) {
+            $query->where('is_active', $request->boolean('active'));
+        }
+
         if ($request->filled('homepage_row_key')) {
             if ($request->homepage_row_key === 'best_offers') {
                 $query->where(function ($q) {
