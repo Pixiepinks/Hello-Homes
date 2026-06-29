@@ -93,6 +93,58 @@ class MetaFeedControllerTest extends TestCase
         $this->assertStringNotContainsString('localhost', Cache::get('meta_catalog_feed_xml'));
     }
 
+    public function test_feed_outputs_sale_price_only_when_original_price_is_greater_than_price(): void
+    {
+        Config::set('app.url', 'https://hellohomes.lk');
+
+        Product::create([
+            'title' => 'Discounted Chair',
+            'subtitle' => 'Chair with sale price',
+            'image_url' => '/storage/products/discounted-chair.jpg',
+            'price' => 2350,
+            'original_price' => 2850,
+            'is_on_sale' => false,
+            'is_active' => true,
+            'stock_quantity' => 5,
+        ]);
+
+        Product::create([
+            'title' => 'Regular Lamp',
+            'subtitle' => 'Lamp without original price',
+            'image_url' => '/storage/products/regular-lamp.jpg',
+            'price' => 2350,
+            'original_price' => null,
+            'is_on_sale' => true,
+            'is_active' => true,
+            'stock_quantity' => 5,
+        ]);
+
+        Product::create([
+            'title' => 'Equal Price Table',
+            'subtitle' => 'Table with matching prices',
+            'image_url' => '/storage/products/equal-price-table.jpg',
+            'price' => 2350,
+            'original_price' => 2350,
+            'is_on_sale' => true,
+            'is_active' => true,
+            'stock_quantity' => 5,
+        ]);
+
+        $response = $this->get('/meta-feed.xml');
+
+        $response->assertOk();
+        $xml = $response->getContent();
+
+        $this->assertStringContainsString('<title>Discounted Chair</title>', $xml);
+        $this->assertStringContainsString('<g:price>2850.00 LKR</g:price>', $xml);
+        $this->assertStringContainsString('<g:sale_price>2350.00 LKR</g:sale_price>', $xml);
+
+        $this->assertStringContainsString('<title>Regular Lamp</title>', $xml);
+        $this->assertStringContainsString('<title>Equal Price Table</title>', $xml);
+        $this->assertSame(2, substr_count($xml, '<g:price>2350.00 LKR</g:price>'));
+        $this->assertSame(1, substr_count($xml, '<g:sale_price>'));
+    }
+
     private function createMetaFeedTables(): void
     {
         Schema::create('categories', function (Blueprint $table) {

@@ -62,7 +62,7 @@ class MetaFeedController extends Controller
 
         foreach ($products as $product) {
             $images = $this->imageUrls($product, $baseUrl);
-            if (empty($images)) {
+            if (empty($images) || !$this->hasValidPrice($product->price)) {
                 continue;
             }
 
@@ -77,9 +77,11 @@ class MetaFeedController extends Controller
             }
             $writer->writeElement('g:availability', 'in stock');
             $writer->writeElement('g:condition', 'new');
-            $writer->writeElement('g:price', $this->formatPrice($product->original_price ?: $product->price));
             if ($this->hasSalePrice($product)) {
+                $writer->writeElement('g:price', $this->formatPrice($product->original_price));
                 $writer->writeElement('g:sale_price', $this->formatPrice($product->price));
+            } else {
+                $writer->writeElement('g:price', $this->formatPrice($product->price));
             }
             $writer->writeElement('g:brand', $this->cleanText($product->brand?->name ?: 'Hello Homes'));
             $writer->writeElement('g:product_type', $this->productType($product));
@@ -98,7 +100,7 @@ class MetaFeedController extends Controller
         Cache::put(self::META_KEY, [
             'feed_url' => $baseUrl . '/meta-feed.xml',
             'last_generation_time' => now()->toIso8601String(),
-            'product_count' => $products->filter(fn ($product) => !empty($this->imageUrls($product, $baseUrl)))->count(),
+            'product_count' => $products->filter(fn ($product) => !empty($this->imageUrls($product, $baseUrl)) && $this->hasValidPrice($product->price))->count(),
         ], self::CACHE_SECONDS);
 
         return $xml;
@@ -179,9 +181,17 @@ class MetaFeedController extends Controller
         return number_format((float) $price, 2, '.', '') . ' LKR';
     }
 
+    private function hasValidPrice($price): bool
+    {
+        return $price !== null && is_numeric($price) && (float) $price > 0;
+    }
+
     private function hasSalePrice(Product $product): bool
     {
-        return (bool) $product->is_on_sale && (float) $product->price > 0 && (float) $product->price < (float) $product->original_price;
+        return $product->original_price !== null
+            && $this->hasValidPrice($product->price)
+            && is_numeric($product->original_price)
+            && (float) $product->original_price > (float) $product->price;
     }
 
     private function productType(Product $product): string
